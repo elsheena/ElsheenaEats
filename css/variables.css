@@ -1,0 +1,67 @@
+:root {
+    --primary-color: #FF6B6B;
+    --primary-hover: #FF5252;
+    --secondary-color: #4ECDC4;
+    --secondary-hover: #45B7AE;
+    --accent-color: #FFE66D;
+    --success-color: #2ECC71;
+    --warning-color: #F1C40F;
+    --error-color: #E74C3C;
+    --disabled-color: #BDC3C7;
+
+    --text-primary: #2C3E50;
+    --text-secondary: #7F8C8D;
+    --text-light: #ECF0F1;
+    --text-dark: #2C3E50;
+
+    --background-primary: #FFFFFF;
+    --background-secondary: #F8F9FA;
+    --background-tertiary: #E9ECEF;
+    --background-dark: #343A40;
+
+    --border-color: #DEE2E6;
+    --border-radius-sm: 4px;
+    --border-radius-md: 8px;
+    --border-radius-lg: 12px;
+
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.1);
+
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+
+    --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    --font-size-xs: 12px;
+    --font-size-sm: 14px;
+    --font-size-md: 16px;
+    --font-size-lg: 18px;
+    --font-size-xl: 24px;
+
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-bold: 700;
+
+    --line-height-tight: 1.25;
+    --line-height-normal: 1.5;
+    --line-height-relaxed: 1.75;
+
+    --transition-fast: 150ms ease;
+    --transition-normal: 250ms ease;
+    --transition-slow: 350ms ease;
+
+    --container-width: 1200px;
+    --header-height: 64px;
+    --footer-height: 60px;
+
+    --z-index-dropdown: 1000;
+    --z-index-sticky: 1020;
+    --z-index-fixed: 1030;
+    --z-index-modal: 1040;
+    --z-index-popover: 1050;
+    --z-index-tooltip: 1060;
+} 
+

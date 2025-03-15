@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - ElsheenaEats</title>
+    <link rel="stylesheet" href="../css/auth.css">
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="auth-container">
+        <h1>Register</h1>
+        <form id="register-form">
+            <label for="name">Full Name:</label>
+            <input type="text" id="name" name="name" required>
+
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required>
+
+            <label for="password">Password:</label>
+            <input type="password" id="register-password" name="password" required>
+            <button type="button" id="toggle-password-register">Show</button>
+            <div id="password-feedback" style="color: red; font-size: 0.9em;"></div>
+
+            <label for="gender-group">Gender:</label>
+            <div class="gender-group">
+                <div class="gender-option">
+                    <input type="radio" id="male" name="gender" value="male">
+                    <label for="male">Male</label>
+                </div>
+                <div class="gender-option">
+                    <input type="radio" id="female" name="gender" value="female">
+                    <label for="female">Female</label>
+                </div>
+            </div>
+
+            <label for="address">Address:</label>
+            <input type="text" id="address" name="address" required>
+
+            <label for="birthdate">Birth Date:</label>
+            <input type="date" id="birthdate" name="birthdate" required>
+
+            <label for="phone">Phone:</label>
+            <input type="text" id="phone" name="phone" required pattern="\+7 \(\d{3}\) \d{3}-\d{2}-\d{2}" placeholder="+7 (___) ___-__-__">
+
+            <button type="submit">Register</button>
+        </form>
+        <p>Already have an account? <a href="login.html">Login here</a></p>
+    </div>
+    <div id="footer-placeholder"></div>
+    <script type="module" src="../js/register.js"></script>
+    <script type="module" src="../js/main.js"></script>
+</body>
+</html>

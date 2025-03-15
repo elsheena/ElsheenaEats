@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopping Cart - ElsheenaEats</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="../css/cart.css">
+</head>
+<body>
+    <div id="header-placeholder"></div>
+
+    <main class="shopping-cart-container">
+        <div class="shopping-cart-header">
+            <h1 class="shopping-cart-title">Your Cart</h1>
+        </div>
+        
+        <div id="cart-items" class="shopping-cart-items"></div>
+
+        <div class="shopping-cart-summary">
+            <div class="shopping-cart-total">
+                <span>Total:</span>
+                <span id="cart-total">0 ₽</span>
+            </div>
+            <button class="btn btn-primary checkout-btn" id="checkout-btn">
+                Proceed to Checkout
+            </button>
+        </div>
+    </main>
+
+    <div id="footer-placeholder"></div>
+
+    <script type="module" src="../js/api.js"></script>
+    <script type="module" src="../js/cart.js"></script>
+    <script type="module" src="../js/main.js"></script>
+</body>
+</html>
