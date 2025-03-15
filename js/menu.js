@@ -183,10 +183,18 @@ async function loadDishes() {
             container.innerHTML = `
                 <div class="empty-dishes-message">
                     <div class="no-dishes-content">
-                        <h3>🤔 Oops! Something went wrong</h3>
-                        <p>We couldn't find any dishes with your current filters. 🍽️</p>
-                        <p>Our chefs are probably cooking up something delicious! 👨‍🍳✨</p>
-                        <p>Try <button onclick="resetFilters()" class="reset-link">resetting the filters</button> or check back later!</p>
+                        <img src="${getErrorLoadingIcon()}" 
+                             alt="Loading" 
+                             class="error-loading-icon">
+                        ${(() => {
+                            const message = getNoResultsMessage();
+                            return `
+                                <h3>${message.title}</h3>
+                                <p>${message.subtitle}</p>
+                                <p>${message.action}</p>
+                            `;
+                        })()}
+                        <p>Meanwhile, you can try <button onclick="resetFilters()" class="reset-link">resetting the filters</button> or check back later! 🔄</p>
                     </div>
                 </div>
             `;
@@ -210,15 +218,16 @@ async function renderDishes(dishes) {
         emptyMessage.className = 'empty-dishes-message';
         emptyMessage.innerHTML = `
             <div class="no-dishes-content">
-                <h3>🔍 No dishes found</h3>
+                <h3>🔍 👨‍🍳 Nothing on the menu yet!</h3>
                 <p>We couldn't find any dishes matching your filters right now. 🍽️</p>
-                <p>Our chefs are working on adding more delicious options! 👨‍🍳✨</p>
+                <p>Our master chefs are preparing something special! 👨‍🍳✨</p>
                 <p>You can try:</p>
                 <ul style="text-align: left; margin: 10px 0;">
-                    <li>Removing some category filters</li>
-                    <li>Unchecking the vegetarian option</li>
-                    <li><button onclick="resetFilters()" class="reset-link">Reset all filters</button></li>
+                    <li>Removing some filters 🔄</li>
+                    <li>Checking different categories 📋</li>
+                    <li>Coming back later for fresh dishes! 🍳</li>
                 </ul>
+                <button onclick="resetFilters()" class="btn btn-primary">Reset All Filters</button>
             </div>
         `;
         container.appendChild(emptyMessage);
@@ -239,7 +248,9 @@ async function renderDishes(dishes) {
         
         dishElement.innerHTML = `
             <div class="dish-image">
-                <img src="${dish.image || 'images/placeholder.jpg'}" alt="${dish.name}">
+                <img src="${dish.image || getRandomLoadingIcon()}" 
+                     alt="${dish.name}"
+                     onerror="this.src='${getRandomLoadingIcon()}'">
             </div>
             <div class="dish-info">
                 <div class="dish-header">
@@ -395,4 +406,69 @@ async function updateQuantityDisplay() {
 export async function updateAllQuantities() {
     await updateQuantityDisplay();
     await updateCartCounter();
+}
+
+function getRandomLoadingIcon() {
+    const icons = [
+        '../images/loading-plate.svg',
+        '../images/loading-chef.svg',
+        '../images/loading-cooking.svg',
+        '../images/loading-plating.svg',
+        '../images/loading-menu.svg',
+        '../images/loading-nothing.svg',
+        '../images/loading-icon.svg',
+        '../images/loading-meme.svg',
+        '../images/loading-confused-chef.svg',
+        '../images/loading-cooking-fail.svg',
+        '../images/loading-searching.svg',
+        '../images/loading-cooking.svg',
+        '../images/loading-plating.svg',
+        '../images/loading-menu.svg'
+    ];
+    return icons[Math.floor(Math.random() * icons.length)];
+}
+
+function getErrorLoadingIcon() {
+    const memeIcons = [
+        '../images/loading-meme.svg',
+        '../images/loading-nothing.svg',
+        '../images/loading-confused-chef.svg',
+        '../images/loading-cooking-fail.svg',
+        '../images/loading-searching.svg',
+        '../images/loading-cooking.svg',
+        '../images/loading-plating.svg',
+        '../images/loading-menu.svg'
+    ];
+    return memeIcons[Math.floor(Math.random() * memeIcons.length)];
+}
+
+function getNoResultsMessage() {
+    const messages = [
+        {
+            title: "🤔 👨‍🍳 Our chef is having a creative block!",
+            subtitle: "We searched high and low in our kitchen, but couldn't find what you're looking for. 🔍",
+            action: "Maybe it's time to try something new? Our chef is full of surprises! ✨"
+        },
+        {
+            title: "👨‍🍳 Oops! The dishes are playing hide and seek!",
+            subtitle: "They're really good at hiding from these filters! 🙈",
+            action: "Let's catch them with different filters! 🎯"
+        },
+        {
+            title: "🏃‍♂️ 👨‍🍳 Our dishes went on vacation!",
+            subtitle: "Even food needs a break sometimes! 🌴",
+            action: "But don't worry, they'll be back soon with new friends! 🌟"
+        },
+        {
+            title: "👨‍🍳 ⚡ Plot twist: No dishes matched!",
+            subtitle: "This is like finding a vegetarian at a BBQ contest! 😅",
+            action: "Time for Plan B: Let's explore other delicious options! 🍽️"
+        },
+        {
+            title: "🎭 👨‍🍳 The Great Food Mystery!",
+            subtitle: "The case of the disappearing dishes... 🕵️‍♂️",
+            action: "Shall we look for clues in other categories? 🔍"
+        }
+    ];
+    return messages[Math.floor(Math.random() * messages.length)];
 }

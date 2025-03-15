@@ -60,6 +60,13 @@
   padding: var(--spacing-md);
   border-radius: var(--border-radius-lg);
   box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.shopping-cart-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 .shopping-cart-item-image {
@@ -111,6 +118,12 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
+  position: relative;
+  z-index: 1;
+}
+
+.quantity-controls:hover {
+  transform: none;
 }
 
 .quantity-btn {
@@ -126,6 +139,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+  z-index: 2;
 }
 
 .quantity-btn:hover {

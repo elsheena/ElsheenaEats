@@ -103,14 +103,27 @@ main.container {
 
 .dish-image {
     width: 100%;
-    aspect-ratio: 16/9;
+    height: 200px;
+    position: relative;
     overflow: hidden;
+    border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+    background: var(--background-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .dish-image img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+}
+
+.dish-image img[src*="loading"] {
+    width: 80%;
+    height: 80%;
+    object-fit: contain;
+    padding: 1rem;
 }
 
 .dish-info {
@@ -415,4 +428,18 @@ main.container {
 
 .reset-link:hover {
     color: var(--primary-hover);
+}
+
+.error-loading-icon {
+    width: 120px;
+    height: 120px;
+    margin-bottom: 1rem;
+    object-fit: contain;
+}
+
+.no-dishes-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
 }

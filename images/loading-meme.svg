@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+    <!-- Background circle -->
+    <circle cx="12" cy="12" r="11" fill="#f0f0f0" stroke="#cccccc"/>
+    
+    <!-- Chef hat -->
+    <path d="M8 8c0-2 2-3 4-3s4 1 4 3c2 0 2 2 2 3s-1 2-2 2h-8c-1 0-2-1-2-2s0-3 2-3z" 
+          fill="white" stroke="#cccccc"/>
+    
+    <!-- Chef face -->
+    <circle cx="12" cy="13" r="5" fill="#cccccc"/>
+    <text x="12" y="15" text-anchor="middle" font-size="6" fill="white">🤔</text>
+    
+    <!-- Animated text -->
+    <text x="12" y="22" text-anchor="middle" font-size="2" fill="#666">
+        Nothing to see here...
+        <animate attributeName="opacity" values="0;1;0" dur="2s" repeatCount="indefinite"/>
+    </text>
+    
+    <!-- Spinning spatula -->
+    <path d="M18 6l2-2l-4 4" fill="none" stroke="#cccccc" stroke-width="1">
+        <animateTransform 
+            attributeName="transform" 
+            type="rotate"
+            from="0 12 12"
+            to="360 12 12" 
+            dur="3s" 
+            repeatCount="indefinite"/>
+    </path>
+</svg> 

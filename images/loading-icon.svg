@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#cccccc">
+    <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2">
+        <animate attributeName="r" from="8" to="12" dur="1.5s" begin="0s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" from="1" to="0" dur="1.5s" begin="0s" repeatCount="indefinite"/>
+    </circle>
+    <path d="M12 6v2M12 16v2M6 12h2M16 12h2" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <animate attributeName="opacity" values="1;0;1" dur="2s" repeatCount="indefinite"/>
+    </path>
+</svg> 

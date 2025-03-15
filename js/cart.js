@@ -21,6 +21,27 @@ async function fetchItemDetails(itemId) {
     }
 }
 
+function getRandomLoadingIcon() {
+    const icons = [
+        '../images/loading-plate.svg',
+        '../images/loading-chef.svg',
+        '../images/loading-nothing.svg',
+        '../images/loading-icon.svg',
+        '../images/loading-meme.svg',
+        '../images/loading-cooking.svg',
+        '../images/loading-plating.svg',
+        '../images/loading-menu.svg',
+        '../images/loading-nothing.svg',
+        '../images/loading-icon.svg',
+        '../images/loading-meme.svg',
+        '../images/loading-cooking.svg',
+        '../images/loading-plating.svg',
+        '../images/loading-menu.svg'
+
+    ];
+    return icons[Math.floor(Math.random() * icons.length)];
+}
+
 async function loadCart() {
     try {
         const cartData = await getCart();
@@ -41,9 +62,9 @@ async function loadCart() {
                 itemElement.className = 'shopping-cart-item';
                 itemElement.innerHTML = `
                     <a href="item.html?id=${item.id}" class="shopping-cart-item-image">
-                        <img src="${item.image || '../images/placeholder-food.jpg'}" 
+                        <img src="${item.image || getRandomLoadingIcon()}" 
                              alt="${item.name}"
-                             onerror="this.src='../images/placeholder-food.jpg'">
+                             onerror="this.src='${getRandomLoadingIcon()}'">
                     </a>
                     <div class="shopping-cart-item-details">
                         <a href="item.html?id=${item.id}" class="shopping-cart-item-name">
@@ -52,11 +73,11 @@ async function loadCart() {
                         <p class="shopping-cart-item-price">${item.price} ₽</p>
                     </div>
                     <div class="quantity-controls">
-                        <button class="quantity-btn decrease" data-dish-id="${item.id}">-</button>
-                        <span class="quantity">${item.amount}</span>
-                        <button class="quantity-btn increase" data-dish-id="${item.id}">+</button>
+                        <button class="quantity-btn" onclick="removeFromCart('${item.id}')">-</button>
+                        <span class="quantity" data-dish-id="${item.id}">${item.amount}</span>
+                        <button class="quantity-btn" onclick="addToCart('${item.id}')">+</button>
                     </div>
-                    <button class="remove-item" data-dish-id="${item.id}">
+                    <button class="remove-item" onclick="removeItemCompletely('${item.id}')">
                         🗑️ Remove
                     </button>
                 `;
@@ -70,8 +91,6 @@ async function loadCart() {
             if (checkoutButton) {
                 checkoutButton.style.display = 'block';
             }
-
-            addCartEventListeners(cartItemsContainer);
         }
     } catch (error) {
         console.error('Error loading cart:', error);
@@ -109,51 +128,77 @@ function showErrorMessage(message) {
     }
 }
 
-async function renderCartItems(cartItems) {
-    const cartContainer = document.getElementById('cart-items');
-    if (!cartContainer) {
-        console.error('Cart container not found');
-        return;
-    }
+function renderCartItems(cartData) {
+    const container = document.getElementById('cart-items');
+    if (!container) return;
 
-    console.log('Starting to render cart items:', cartItems);
-    cartContainer.innerHTML = '';
+    container.innerHTML = '';
 
-    for (const item of cartItems) {
-        try {
-            console.log('Fetching details for item:', item.id);
-            const dishDetails = await apiRequest(`/api/dish/${item.id}`, 'GET');
-            console.log('Dish details:', dishDetails);
+    cartData.forEach(item => {
+        const itemElement = document.createElement('div');
+        itemElement.className = 'shopping-cart-item';
+        itemElement.dataset.id = item.id;
+        
+        itemElement.innerHTML = `
+            <div class="shopping-cart-item-image">
+                <img src="${item.image || '../images/placeholder-food.jpg'}" alt="${item.name}">
+            </div>
+            <div class="shopping-cart-item-details">
+                <h3>${item.name}</h3>
+                <div class="shopping-cart-item-price">${item.price} ₽</div>
+            </div>
+            <div class="quantity-controls">
+                <button class="quantity-btn decrease-btn" data-id="${item.id}">-</button>
+                <span class="quantity">${item.amount}</span>
+                <button class="quantity-btn increase-btn" data-id="${item.id}">+</button>
+            </div>
+            <button class="remove-item-completely" data-id="${item.id}">Remove</button>
+        `;
 
-            const itemElement = document.createElement('div');
-            itemElement.className = 'shopping-cart-item';
-            itemElement.innerHTML = `
-                <a href="item.html?id=${item.id}" class="shopping-cart-item-image">
-                    <img src="${dishDetails.image || 'images/placeholder-food.jpg'}" 
-                         alt="${dishDetails.name}"
-                         onerror="this.src='images/placeholder-food.jpg'">
-                </a>
-                <div class="shopping-cart-item-details">
-                    <a href="item.html?id=${item.id}" class="shopping-cart-item-name">
-                        <h3>${dishDetails.name}</h3>
-                    </a>
-                    <p class="shopping-cart-item-price">${dishDetails.price} ₽</p>
-                    ${dishDetails.vegetarian ? '<span class="vegetarian-badge">🌱 Vegetarian</span>' : ''}
-                </div>
-                <div class="quantity-controls">
-                    <button class="quantity-btn" onclick="removeFromCart('${item.id}')">-</button>
-                    <span class="quantity" data-dish-id="${item.id}">${item.amount}</span>
-                    <button class="quantity-btn" onclick="addToCart('${item.id}')">+</button>
-                </div>
-                <button class="btn btn-secondary remove-item" onclick="removeItemCompletely('${item.id}')">
-                    🗑️ Remove
-                </button>
-            `;
-            cartContainer.appendChild(itemElement);
-        } catch (error) {
-            console.error('Error rendering item:', item.id, error);
-        }
-    }
+        itemElement.addEventListener('click', (e) => {
+            if (!e.target.closest('.quantity-controls') && !e.target.closest('.remove-item-completely')) {
+                window.location.href = `item.html?id=${item.id}`;
+            }
+        });
+
+        container.appendChild(itemElement);
+    });
+
+    addCartControlListeners();
+}
+
+function addCartControlListeners() {
+    document.querySelectorAll('.quantity-btn').forEach(btn => {
+        btn.replaceWith(btn.cloneNode(true));
+    });
+    
+    document.querySelectorAll('.remove-item-completely').forEach(btn => {
+        btn.replaceWith(btn.cloneNode(true));
+    });
+
+    document.querySelectorAll('.increase-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const id = e.target.dataset.id;
+            await addToCart(id);
+            await updateCart();
+        });
+    });
+
+    document.querySelectorAll('.decrease-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const id = e.target.dataset.id;
+            await removeFromCart(id);
+            await updateCart();
+        });
+    });
+
+    document.querySelectorAll('.remove-item-completely').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const id = e.target.dataset.id;
+            await removeItemCompletely(id);
+            await updateCart();
+        });
+    });
 }
 
 function updateTotal(cartItems) {
@@ -286,7 +331,7 @@ function addCartEventListeners(container) {
             } else if (button.classList.contains('remove-item')) {
                 await removeItemCompletely(dishId);
             }
-            await loadCart(); // Refresh cart after any action
+            await loadCart();
         } catch (error) {
             console.error('Error updating cart:', error);
             alert('Failed to update cart. Please try again.');

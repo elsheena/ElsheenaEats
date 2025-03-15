@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="11" fill="#f0f0f0" stroke="#cccccc"/>
+    <!-- Plate -->
+    <circle cx="12" cy="13" r="6" fill="white" stroke="#cccccc"/>
+    <!-- Food being plated -->
+    <text x="12" y="14" text-anchor="middle" font-size="6">🍽️</text>
+    <text x="12" y="11" text-anchor="middle" font-size="4">
+        ✨
+        <animateMotion 
+            path="M 0 0 L 0 -3 L 0 0" 
+            dur="1.5s" 
+            repeatCount="indefinite"/>
+    </text>
+    <text x="12" y="20" text-anchor="middle" font-size="2" fill="#666">
+        Plating your dish...
+        <animate attributeName="opacity" values="1;0.5;1" dur="2s" repeatCount="indefinite"/>
+    </text>
+</svg> 

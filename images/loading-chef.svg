@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+    <circle cx="12" cy="8" r="6" fill="#cccccc"/>
+    <text x="12" y="9" text-anchor="middle" font-size="3" fill="white">👨‍🍳</text>
+    <text x="12" y="16" text-anchor="middle" font-size="2.5" fill="#cccccc">
+        Cooking...
+        <animate attributeName="opacity" values="0;1;0" dur="1.5s" repeatCount="indefinite"/>
+    </text>
+</svg> 
