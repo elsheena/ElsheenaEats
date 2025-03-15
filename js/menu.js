@@ -1,4 +1,4 @@
-import { API_BASE_URL, apiRequest, getCart, updateCartCounter } from './api.js';
+import { API_BASE_URL, apiRequest, getCart, updateCartCounter, validateToken } from './api.js';
 
 const API_ENDPOINTS = {
     dishes: '/api/dish',
@@ -25,11 +25,16 @@ const SORT_OPTIONS = {
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
+    const isValid = await validateToken();
+    if (!isValid && !window.location.pathname.includes('login.html')) {
+        window.location.href = 'login.html';
+        return;
+    }
+    
     await initializeFilters();
     await loadDishes();
-    if (localStorage.getItem('token')) {
-        await updateCartQuantities();
-    }
+    await updateAuthUI();
+    startTokenValidation();
 });
 
 function updateURLParameters() {
@@ -161,6 +166,7 @@ function resetFilters() {
 
 async function loadDishes() {
     try {
+        const isAuthenticated = await validateToken();
         const queryParams = new URLSearchParams();
         
         if (currentFilters.categories.size > 0) {
@@ -176,6 +182,7 @@ async function loadDishes() {
         const response = await apiRequest(`${API_ENDPOINTS.dishes}?${queryParams}`, 'GET');
         await renderDishes(response.dishes);
         renderPagination(response.pagination.count);
+        await updateAuthUI();
     } catch (error) {
         console.error('Error loading dishes:', error);
         const container = document.getElementById('dishes-container');
@@ -374,22 +381,26 @@ window.resetFilters = resetFilters;
 
 function formatRating(rating) {
     if (rating === null || rating === undefined) {
-        return '⭐ No ratings yet';
+        return '★ No ratings yet';
     }
     const ratingNum = parseFloat(rating);
     if (!Number.isFinite(ratingNum)) {
-        return '⭐ No ratings yet';
+        return '★ No ratings yet';
     }
     
-    // Convert 10-point scale to 5 stars (divide by 2)
     const starCount = ratingNum / 2;
     const fullStars = Math.floor(starCount);
     const hasHalfStar = starCount % 1 >= 0.5;
     
-    return '⭐'.repeat(fullStars) + 
-           (hasHalfStar ? '⭐' : '') + 
-           '☆'.repeat(5 - fullStars - (hasHalfStar ? 1 : 0)) +
-           ` ${ratingNum.toFixed(1)}/10`;
+    return `<div class="rating-stars-display">
+        ${Array.from({length: 5}, (_, i) => `
+            <div class="star-container-display">
+                <span class="star-display full ${i < fullStars ? 'active' : ''}">★</span>
+                <span class="star-display half ${i < fullStars || (i === fullStars && hasHalfStar) ? 'active' : ''}">★</span>
+            </div>
+        `).join('')}
+        <span class="rating-number">${ratingNum.toFixed(1)}/10</span>
+    </div>`;
 }
 
 async function updateQuantityDisplay() {
@@ -480,4 +491,26 @@ function getNoResultsMessage() {
         }
     ];
     return messages[Math.floor(Math.random() * messages.length)];
+}
+
+async function updateAuthUI() {
+    const isAuthenticated = await validateToken();
+    
+    document.querySelectorAll('.quantity-controls').forEach(control => {
+        control.style.display = isAuthenticated ? 'flex' : 'none';
+    });
+    
+    document.querySelectorAll('.rating-controls').forEach(control => {
+        control.style.display = isAuthenticated ? 'flex' : 'none';
+    });
+}
+
+function startTokenValidation() {
+    setInterval(async () => {
+        const isValid = await validateToken();
+        if (!isValid && !window.location.pathname.includes('login.html')) {
+            alert('Your session has expired. Please log in again.');
+            window.location.href = 'login.html';
+        }
+    }, 60000);
 }

@@ -145,40 +145,111 @@
     border: 1px solid #eee;
     border-radius: 8px;
     background: #f9f9f9;
+    display: flex;
+    align-items: center;
+    gap: 16px;
 }
 
 .rating-stars {
     display: flex;
-    gap: 5px;
+    gap: 0;
     align-items: center;
-    margin: 10px 0;
+    margin: 0;
+}
+
+.star-container {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    display: inline-flex;
+    align-items: center;
 }
 
 .star-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    left: 0;
     background: none;
     border: none;
     cursor: pointer;
-    font-size: 24px;
+    font-size: 40px;
     padding: 0;
-    opacity: 0.3;
+    color: #ffd700;
     transition: all 0.2s ease;
+    width: 40px;
+    height: 40px;
+    opacity: 0.3;
+    line-height: 1;
+}
+
+.star-btn.full {
+    clip-path: polygon(49% 0, 100% 0, 100% 100%, 49% 100%); 
+}
+
+.star-btn.half {
+    clip-path: polygon(0 0, 51% 0, 51% 100%, 0 100%); 
 }
 
 .star-btn:hover,
 .star-btn.active {
     opacity: 1;
-    transform: scale(1.2);
 }
 
 .rating-preview {
-    margin-left: 10px;
-    font-size: 14px;
+    margin-left: 12px;
+    font-size: 16px;
     color: var(--text-secondary);
+    min-width: 100px;
 }
 
 .rating-message {
     font-size: 16px;
     color: var(--text-primary);
+}
+
+.rating-stars-display {
+    display: inline-flex;
+    gap: 0;
+    align-items: center;
+}
+
+.star-container-display {
+    position: relative;
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+}
+
+.star-display {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    left: 0;
+    font-size: 32px;
+    color: #ffd700;
+    opacity: 0.3;
+    line-height: 1;
+}
+
+.star-display.full {
+    clip-path: polygon(49% 0, 100% 0, 100% 100%, 49% 100%);
+}
+
+.star-display.half {
+    clip-path: polygon(0 0, 51% 0, 51% 100%, 0 100%);
+}
+
+.star-display.active {
+    opacity: 1;
+}
+
+.rating-number {
+    margin-left: 12px;
+    font-size: 16px;
+    color: var(--text-secondary);
+    vertical-align: middle;
 }
 
 @media (max-width: 768px) {

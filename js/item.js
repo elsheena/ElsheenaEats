@@ -91,12 +91,10 @@ async function loadDishDetails(dishId) {
         const token = localStorage.getItem('token');
         if (token) {
             try {
-                // Check if user can rate
                 const canRateResponse = await apiRequest(API_ENDPOINTS.ratingCheck(dishId), 'GET');
                 console.log('Can rate response:', canRateResponse);
                 canRate = canRateResponse === true;
 
-                // Check if user has delivered orders with this dish
                 const hasDeliveredOrder = await checkDeliveredOrders(dishId);
                 console.log('Has delivered order:', hasDeliveredOrder);
                 
@@ -105,32 +103,38 @@ async function loadDishDetails(dishId) {
                     ratingControls.style.display = 'flex';
                     
                     if (!canRate) {
-                        // User has already rated
                         ratingControls.innerHTML = `
                             <span class="rating-message">
                                 ✨ You have already rated this dish! Current rating: ${formatRating(dish.rating)}
                             </span>
                         `;
                     } else if (!hasDeliveredOrder) {
-                        // User hasn't ordered or received the dish
                         ratingControls.innerHTML = `
                             <span class="rating-message">
                                 👋 You need to order and receive this dish before rating it
                             </span>
                         `;
                     } else {
-                        // User can rate
                         ratingControls.innerHTML = `
                             <span>Rate this dish:</span>
                             <div class="rating-stars">
-                                ${Array.from({length: 10}, (_, i) => `
-                                    <button class="star-btn" 
-                                            onclick="window.setRating(${(i + 1)})" 
-                                            onmouseover="window.highlightStars(${i + 1})"
-                                            onmouseout="window.resetStars()"
-                                            data-rating="${i + 1}">
-                                        ⭐
-                                    </button>
+                                ${Array.from({length: 5}, (_, i) => `
+                                    <div class="star-container">
+                                        <button class="star-btn half" 
+                                                onclick="window.setRating(${(i + 0.5) * 2})" 
+                                                onmouseover="window.highlightStars(${i + 0.5})"
+                                                onmouseout="window.resetStars()"
+                                                data-rating="${i + 0.5}">
+                                            ★
+                                        </button>
+                                        <button class="star-btn full" 
+                                                onclick="window.setRating(${(i + 1.0) * 2})" 
+                                                onmouseover="window.highlightStars(${i + 1})"
+                                                onmouseout="window.resetStars()"
+                                                data-rating="${i + 1}">
+                                            ★
+                                        </button>
+                                    </div>
                                 `).join('')}
                             </div>
                             <span class="rating-preview"></span>
@@ -172,6 +176,40 @@ async function loadDishDetails(dishId) {
     }
 }
 
+function setupBackButton() {
+    const backButton = document.querySelector('.back-button');
+    if (backButton) {
+        const referrer = document.referrer;
+        const currentDomain = window.location.origin;
+
+        if (referrer && referrer.startsWith(currentDomain)) {
+            const referrerPath = new URL(referrer).pathname;
+            
+            if (referrerPath.includes('/cart.html')) {
+                backButton.textContent = '← Back to Cart';
+                backButton.href = 'cart.html';
+            } else if (referrerPath.includes('/orders.html')) {
+                backButton.textContent = '← Back to Orders';
+                backButton.href = 'orders.html';
+            } else if (referrerPath.includes('/order.html')) {
+                backButton.textContent = '← Back to Order';
+                backButton.href = document.referrer;
+            } else {
+                backButton.textContent = '← Back to Menu';
+                backButton.href = 'index.html';
+            }
+        } else {
+            backButton.textContent = '← Back to Menu';
+            backButton.href = 'index.html';
+        }
+
+        backButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.history.back();
+        });
+    }
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     const urlParams = new URLSearchParams(window.location.search);
     const dishId = urlParams.get('id');
@@ -181,6 +219,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
+    setupBackButton();
     await loadDishDetails(dishId);
 });
 
@@ -236,6 +275,9 @@ async function setRating(score) {
                     </span>
                 `;
             }
+
+            await updateCartQuantity();
+            await updateCartCounter();
         }
     } catch (error) {
         console.error('Error setting rating:', error);
@@ -251,22 +293,26 @@ async function setRating(score) {
 
 function formatRating(rating) {
     if (rating === null || rating === undefined) {
-        return '⭐ No ratings yet';
+        return '★ No ratings yet';
     }
     const ratingNum = parseFloat(rating);
     if (!Number.isFinite(ratingNum)) {
-        return '⭐ No ratings yet';
+        return '★ No ratings yet';
     }
     
-    // Convert 10-point scale to 5 stars (divide by 2)
     const starCount = ratingNum / 2;
     const fullStars = Math.floor(starCount);
     const hasHalfStar = starCount % 1 >= 0.5;
     
-    return '⭐'.repeat(fullStars) + 
-           (hasHalfStar ? '⭐' : '') + 
-           '☆'.repeat(5 - fullStars - (hasHalfStar ? 1 : 0)) +
-           ` ${ratingNum.toFixed(1)}/10`;
+    return `<div class="rating-stars-display">
+        ${Array.from({length: 5}, (_, i) => `
+            <div class="star-container-display">
+                <span class="star-display full ${i < fullStars ? 'active' : ''}">★</span>
+                <span class="star-display half ${i < fullStars || (i === fullStars && hasHalfStar) ? 'active' : ''}">★</span>
+            </div>
+        `).join('')}
+        <span class="rating-number">${ratingNum.toFixed(1)}/10</span>
+    </div>`;
 }
 
 function renderDish(dish) {
@@ -277,14 +323,23 @@ function renderDish(dish) {
         <div id="rating-controls" class="rating-controls" style="display: none;">
             <span>Rate this dish:</span>
             <div class="rating-stars">
-                ${Array.from({length: 10}, (_, i) => `
-                    <button class="star-btn" 
-                            onclick="window.setRating(${(i + 1)})" 
-                            onmouseover="window.highlightStars(${i + 1})"
-                            onmouseout="window.resetStars()"
-                            data-rating="${i + 1}">
-                        ⭐
-                    </button>
+                ${Array.from({length: 5}, (_, i) => `
+                    <div class="star-container">
+                        <button class="star-btn half" 
+                                onclick="window.setRating(${(i + 0.5) * 2})" 
+                                onmouseover="window.highlightStars(${i + 0.5})"
+                                onmouseout="window.resetStars()"
+                                data-rating="${i + 0.5}">
+                            ★
+                        </button>
+                        <button class="star-btn full" 
+                                onclick="window.setRating(${(i + 1.0) * 2})" 
+                                onmouseover="window.highlightStars(${i + 1})"
+                                onmouseout="window.resetStars()"
+                                data-rating="${i + 1}">
+                            ★
+                        </button>
+                    </div>
                 `).join('')}
             </div>
             <span class="rating-preview"></span>
@@ -338,26 +393,39 @@ function getRandomLoadingIcon() {
     return icons[Math.floor(Math.random() * icons.length)];
 }
 
-// Add these new functions for star highlighting
 function highlightStars(rating) {
-    const stars = document.querySelectorAll('.star-btn');
+    const stars = document.querySelectorAll('.star-container');
     const preview = document.querySelector('.rating-preview');
     
-    stars.forEach((star, index) => {
-        if (index < rating) {
-            star.classList.add('active');
+    stars.forEach((container, index) => {
+        const halfStar = container.querySelector('.half');
+        const fullStar = container.querySelector('.full');
+        
+        if (index + 0.5 <= rating) {
+            halfStar.classList.add('active');
         } else {
-            star.classList.remove('active');
+            halfStar.classList.remove('active');
+        }
+        
+        if (index + 1 <= rating) {
+            fullStar.classList.add('active');
+        } else {
+            fullStar.classList.remove('active');
         }
     });
     
-    preview.textContent = `${rating}/10`;
+    preview.textContent = `${(rating * 2).toFixed(1)}/10`;
 }
 
 function resetStars() {
-    const stars = document.querySelectorAll('.star-btn');
+    const stars = document.querySelectorAll('.star-container');
     const preview = document.querySelector('.rating-preview');
-    stars.forEach(star => star.classList.remove('active'));
+    stars.forEach(container => {
+        const halfStar = container.querySelector('.half');
+        const fullStar = container.querySelector('.full');
+        halfStar.classList.remove('active');
+        fullStar.classList.remove('active');
+    });
     preview.textContent = '';
 }
 

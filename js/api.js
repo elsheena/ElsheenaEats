@@ -1,24 +1,23 @@
 export const API_BASE_URL = 'https://food-delivery.int.kreosoft.space';
 
 export async function apiRequest(endpoint, method = 'GET', body = null) {
-    const headers = {
-        'Content-Type': 'application/json',
-    };
-
-    const token = localStorage.getItem('token');
-    if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-    }
-
     try {
-        const response = await fetch(API_BASE_URL + endpoint, {
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
             method,
-            headers,
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
             body: body ? JSON.stringify(body) : null
         });
 
         if (response.status === 401) {
-            throw new Error('401');
+            localStorage.removeItem('token');
+            if (!window.location.pathname.includes('login.html')) {
+                alert('Your session has expired. Please log in again.');
+                window.location.href = 'login.html';
+            }
+            throw new Error('Unauthorized');
         }
         if (response.status === 403) {
             throw new Error('403');
@@ -175,6 +174,24 @@ export async function createOrder(orderData) {
 
 export async function confirmDelivery(orderId) {
     return apiRequest(`/api/order/${orderId}/status`, 'POST');
+}
+
+export async function validateToken() {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        return false;
+    }
+    
+    try {
+        await apiRequest('/api/account/profile', 'GET');
+        return true;
+    } catch (error) {
+        if (error.status === 401) {
+            localStorage.removeItem('token');
+            return false;
+        }
+        throw error;
+    }
 }
 
 document.addEventListener('DOMContentLoaded', async () => {

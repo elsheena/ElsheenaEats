@@ -447,22 +447,67 @@ main.container {
 .rating-display {
     font-family: system-ui;
     letter-spacing: 2px;
-    color: #ffd700;  /* Golden color for stars */
+    color: #ffd700;  
 }
 
 .rating-display ★ {
-    color: #ffd700;  /* Full star color */
+    color: #ffd700; 
 }
 
 .rating-display ½ {
-    color: #ffd700;  /* Half star color */
+    color: #ffd700;  
 }
 
 .rating-display ☆ {
-    color: #d4d4d4;  /* Empty star color */
+    color: #d4d4d4;  
     opacity: 0.5;
 }
 
 .empty-star {
     opacity: 0.3;
+}
+
+.rating-stars-display {
+    display: inline-flex;
+    gap: 0;
+    align-items: center;
+    vertical-align: middle; 
+}
+
+.star-container-display {
+    position: relative;
+    width: 24px;   
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+}
+
+.star-display {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    left: 0;
+    font-size: 24px;  
+    color: #ffd700;
+    opacity: 0.3;
+    line-height: 1;
+}
+
+.star-display.full {
+    clip-path: polygon(49% 0, 100% 0, 100% 100%, 49% 100%);
+}
+
+.star-display.half {
+    clip-path: polygon(0 0, 51% 0, 51% 100%, 0 100%);
+}
+
+.star-display.active {
+    opacity: 1;
+}
+
+.rating-number {
+    margin-left: 12px;
+    font-size: 16px;
+    color: var(--text-secondary);
+    vertical-align: middle;  
 }

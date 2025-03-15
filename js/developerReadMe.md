@@ -139,7 +139,7 @@
            await updateCartCounter();
        }
    });
-   ```
+   ``` 
 
 8. The Most Important Rules:
    - Always check auth before protected operations
