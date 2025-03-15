@@ -3,12 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Redirecting...</title>
-    <meta http-equiv="refresh" content="0; url=pages/index.html">
+    <title>ElsheenaEats - Food Delivery</title>
+    <link rel="stylesheet" href="css/menu.css">
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <h1>Redirecting to the ElsheenaEats...</h1>
-    <p>If you are not redirected automatically, follow this <a href="pages/index.html">link</a>.</p>
+    <div id="header-placeholder"></div>
+    
+    <main class="container menu-container">
+        <div class="filters">
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label for="categories" class="filter-label">Categories:</label>
+                    <div class="categories" id="categories"></div>
+                </div>
+
+                <div class="filter-group">
+                    <label class="filter-label">
+                        <input type="checkbox" id="vegetarian-toggle">
+                        Vegetarian Only
+                    </label>
+                </div>
+
+                <div class="filter-group">
+                    <label for="sort-select" class="filter-label">Sort by:</label>
+                    <select id="sort-select" class="filter-select"></select>
+                </div>
+            </div>
+        </div>
+
+        <div id="dishes-container" class="dishes-grid"></div>
+
+        <div id="pagination" class="pagination"></div>
+    </main>
+    <div id="footer-placeholder"></div>
+    <script type="module" src="js/api.js"></script>
+    <script type="module" src="js/menu.js"></script>
+    <script type="module" src="js/main.js"></script>
 </body>
 </html>

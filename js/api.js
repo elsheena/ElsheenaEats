@@ -1,21 +1,52 @@
+import { getCleanUrl } from './main.js';
+import { loadCart } from './cart.js';
+import { updateQuantityDisplay } from './menu.js';
+
 export const API_BASE_URL = 'https://food-delivery.int.kreosoft.space';
 
-export async function apiRequest(endpoint, method = 'GET', body = null) {
+const API_ENDPOINTS = {
+    basket: '/api/basket',
+    basketDish: (id) => `/api/basket/dish/${id}`,
+    dish: '/api/dish',
+    dishId: (id) => `/api/dish/${id}`,
+    dishRating: (id) => `/api/dish/${id}/rating`,
+    dishRatingCheck: (id) => `/api/dish/${id}/rating/check`,
+    dishRatingSet: (id) => `/api/dish/${id}/rating?ratingScore=`,
+    order: '/api/order',
+    orderId: (id) => `/api/order/${id}`,
+    orderConfirm: (id) => `/api/order/${id}/status`,
+    accountLogin: '/api/account/login',
+    accountRegister: '/api/account/register',
+    accountProfile: '/api/account/profile',
+    accountLogout: '/api/account/logout',
+    accountUpdate: '/api/account/profile',
+    accountValidate: '/api/account/profile',
+};
+
+export async function apiRequest(endpoint, method = 'GET', data = null) {
+    const token = localStorage.getItem('token');
+    const currentPath = window.location.pathname;
+    const PUBLIC_PAGES = ['/login', '/registration', '/register'];
+    const isPublicPage = PUBLIC_PAGES.some(page => currentPath.includes(page));
+    
+    const headers = {
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` })
+    };
+
     try {
-        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        console.log(`Making ${method} request to:`, endpoint);
+        const response = await fetch(API_BASE_URL + endpoint, {
             method,
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            },
-            body: body ? JSON.stringify(body) : null
+            headers,
+            ...(data && { body: JSON.stringify(data) })
         });
 
         if (response.status === 401) {
             localStorage.removeItem('token');
-            if (!window.location.pathname.includes('login.html')) {
+            if (!isPublicPage) {
                 alert('Your session has expired. Please log in again.');
-                window.location.href = 'login.html';
+                window.location.href = getCleanUrl('login');
             }
             throw new Error('Unauthorized');
         }
@@ -32,34 +63,36 @@ export async function apiRequest(endpoint, method = 'GET', body = null) {
 
         const contentType = response.headers.get('content-type');
         if (contentType && contentType.includes('application/json')) {
-            return await response.json();
+            const result = await response.json();
+            console.log('API response:', result);
+            return result;
         }
         return true;
 
     } catch (error) {
-        console.error('API Request Error:', error);
+        console.error('API request failed:', error);
         throw error;
     }
 }
 
 export async function login(email, password) {
-    return apiRequest('/api/account/login', 'POST', { email, password });
+    return apiRequest(API_ENDPOINTS.accountLogin, 'POST', { email, password });
 }
 
 export async function register(userData) {
-    return apiRequest('/api/account/register', 'POST', userData);
+    return apiRequest(API_ENDPOINTS.accountRegister, 'POST', userData);
 }
 
 export async function logout() {
-    return apiRequest('/api/account/logout', 'POST');
+    return apiRequest(API_ENDPOINTS.accountLogout, 'POST');
 }
 
 export async function getProfile() {
-    return apiRequest('/api/account/profile', 'GET');
+    return apiRequest(API_ENDPOINTS.accountProfile, 'GET');
 }
 
 export async function updateProfile(userData) {
-    return apiRequest('/api/account/profile', 'PUT', userData);
+    return apiRequest(API_ENDPOINTS.accountUpdate, 'PUT', userData);
 }
 
 export async function getDishes(params = {}) {
@@ -76,24 +109,24 @@ export async function getDishes(params = {}) {
     if (params.page) {
         queryParams.append('page', params.page);
     }
-    return apiRequest(`/api/dish?${queryParams}`);
+    return apiRequest(API_ENDPOINTS.dish + `?${queryParams}`);
 }
 
 export async function getDish(id) {
-    return apiRequest(`/api/dish/${id}`);
+    return apiRequest(API_ENDPOINTS.dishId(id));
 }
 
 export async function checkRating(dishId) {
-    return apiRequest(`/api/dish/${dishId}/rating/check`);
+    return apiRequest(API_ENDPOINTS.dishRatingCheck(dishId));
 }
 
 export async function setRating(dishId, rating) {
-    return apiRequest(`/api/dish/${dishId}/rating?ratingScore=${rating}`, 'POST');
+    return apiRequest(API_ENDPOINTS.dishRatingSet(dishId) + rating, 'POST');
 }
 
 export async function getCart() {
     try {
-        const response = await apiRequest('/api/basket', 'GET');
+        const response = await apiRequest(API_ENDPOINTS.basket, 'GET');
         return response;
     } catch (error) {
         console.error('Error getting cart:', error);
@@ -102,6 +135,13 @@ export async function getCart() {
 }
 
 export async function updateCartCounter() {
+    const currentPath = window.location.pathname;
+    const PUBLIC_PAGES = ['/login', '/registration',];
+    
+    if (PUBLIC_PAGES.some(page => currentPath.includes(page))) {
+        return;
+    }
+
     try {
         const cartData = await getCart();
         const cartCounter = document.getElementById('cart-counter');
@@ -121,14 +161,16 @@ export async function updateCartCounter() {
         const cartCounter = document.getElementById('cart-counter');
         if (cartCounter) {
             cartCounter.textContent = '0';
-            cartCounter.style.display = 'inline-block';
+            cartCounter.style.display = 'none';
         }
     }
 }
 
 export async function addToCart(dishId) {
     try {
-        await apiRequest(`/api/basket/dish/${dishId}`, 'POST');
+        await apiRequest(API_ENDPOINTS.basketDish(dishId), 'POST');
+        await loadCart();
+        await updateQuantityDisplay();
         await updateCartCounter();
         return true;
     } catch (error) {
@@ -139,7 +181,9 @@ export async function addToCart(dishId) {
 
 export async function removeFromCart(dishId, decrease = true) {
     try {
-        await apiRequest(`/api/basket/dish/${dishId}?increase=${decrease}`, 'DELETE');
+        await apiRequest(API_ENDPOINTS.basketDish(dishId) + `?increase=${decrease}`, 'DELETE');
+        await loadCart();
+        await updateQuantityDisplay();
         await updateCartCounter();
         return true;
     } catch (error) {
@@ -150,7 +194,8 @@ export async function removeFromCart(dishId, decrease = true) {
 
 export async function removeItemCompletely(dishId) {
     try {
-        await apiRequest(`/api/basket/dish/${dishId}?increase=false`, 'DELETE');
+        await apiRequest(API_ENDPOINTS.basketDish(dishId) + `?increase=false`, 'DELETE');
+        await loadCart();
         await updateCartCounter();
         const updatedCart = await getCart(); 
         return updatedCart;
@@ -161,29 +206,36 @@ export async function removeItemCompletely(dishId) {
 }
 
 export async function getOrders() {
-    return apiRequest('/api/order');
+    return apiRequest(API_ENDPOINTS.order);
 }
 
 export async function getOrder(id) {
-    return apiRequest(`/api/order/${id}`);
+    return apiRequest(API_ENDPOINTS.orderId(id));
 }
 
 export async function createOrder(orderData) {
-    return apiRequest('/api/order', 'POST', orderData);
+    return apiRequest(API_ENDPOINTS.order, 'POST', orderData);
 }
 
 export async function confirmDelivery(orderId) {
-    return apiRequest(`/api/order/${orderId}/status`, 'POST');
+    return apiRequest(API_ENDPOINTS.orderConfirm(orderId), 'POST');
 }
 
 export async function validateToken() {
+    const currentPath = window.location.pathname;
+    const PUBLIC_PAGES = ['/login', '/registration', '/register'];
+    
+    if (PUBLIC_PAGES.some(page => currentPath.includes(page))) {
+        return true;
+    }
+
     const token = localStorage.getItem('token');
     if (!token) {
         return false;
     }
     
     try {
-        await apiRequest('/api/account/profile', 'GET');
+        await apiRequest(API_ENDPOINTS.accountValidate, 'GET');
         return true;
     } catch (error) {
         if (error.status === 401) {
@@ -195,7 +247,10 @@ export async function validateToken() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-    if (localStorage.getItem('token')) {
+    const currentPath = window.location.pathname;
+    const PUBLIC_PAGES = ['/login', '/registration', '/register'];
+    
+    if (!PUBLIC_PAGES.some(page => currentPath.includes(page)) && localStorage.getItem('token')) {
         await getCart();
     }
 });

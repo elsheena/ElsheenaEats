@@ -1,4 +1,5 @@
-import { API_BASE_URL, apiRequest, getCart, updateCartCounter, validateToken } from './api.js';
+import { apiRequest, getCart, updateCartCounter, removeFromCart, addToCart, removeItemCompletely } from './api.js';
+import { getCleanUrl, checkAuth, updateAuthUI, getRandomLoadingIcon, getErrorLoadingIcon } from './main.js';
 
 const API_ENDPOINTS = {
     dishes: '/api/dish',
@@ -13,7 +14,6 @@ let currentFilters = {
     page: 1
 };
 
-const ITEMS_PER_PAGE = 12;
 const CATEGORIES = ['Wok', 'Pizza', 'Soup', 'Dessert', 'Drink'];
 const SORT_OPTIONS = {
     NameAsc: 'Name A-Z',
@@ -25,16 +25,12 @@ const SORT_OPTIONS = {
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
-    const isValid = await validateToken();
-    if (!isValid && !window.location.pathname.includes('login.html')) {
-        window.location.href = 'login.html';
-        return;
+    if (await checkAuth()) {
+        await initializeFilters();
+        await loadDishes();
+        await updateAuthUI();
+        startTokenValidation();
     }
-    
-    await initializeFilters();
-    await loadDishes();
-    await updateAuthUI();
-    startTokenValidation();
 });
 
 function updateURLParameters() {
@@ -166,7 +162,6 @@ function resetFilters() {
 
 async function loadDishes() {
     try {
-        const isAuthenticated = await validateToken();
         const queryParams = new URLSearchParams();
         
         if (currentFilters.categories.size > 0) {
@@ -182,6 +177,7 @@ async function loadDishes() {
         const response = await apiRequest(`${API_ENDPOINTS.dishes}?${queryParams}`, 'GET');
         await renderDishes(response.dishes);
         renderPagination(response.pagination.count);
+        await updateQuantityDisplay();
         await updateAuthUI();
     } catch (error) {
         console.error('Error loading dishes:', error);
@@ -282,8 +278,8 @@ async function renderDishes(dishes) {
         dishElement.addEventListener('click', (e) => {
             if (!e.target.closest('.quantity-controls')) {
                 e.preventDefault();
-                const url = `item.html?id=${dish.id}`;
-                window.location.href = url;
+                const dishId = dish.id;
+                window.location.href = getCleanUrl('item', { id: dishId });
             }
         });
 
@@ -333,47 +329,10 @@ function createPaginationLink(page, text = page) {
     return link;
 }
 
-async function updateCartQuantities() {
-    try {
-        const cartItems = await getCart();
-        if (!cartItems || !cartItems.dishes) return;
-
-        const quantityElements = document.querySelectorAll('.quantity');
-        quantityElements.forEach(element => {
-            const dishId = element.dataset.dishId;
-            const cartItem = cartItems.dishes.find(item => item.id === dishId);
-            element.textContent = cartItem ? cartItem.amount : '0';
-        });
-        
-    } catch (error) {
-        console.error('Error updating cart quantities:', error);
-    }
-}
-
 window.addEventListener('popstate', () => {
     parseURLParameters();
     loadDishes();
 });
-
-async function addToCart(dishId) {
-    try {
-        await apiRequest(`/api/basket/dish/${dishId}`, 'POST');
-        await updateQuantityDisplay();
-        await updateCartCounter();
-    } catch (error) {
-        console.error('Error adding to cart:', error);
-    }
-}
-
-async function removeFromCart(dishId) {
-    try {
-        await apiRequest(`/api/basket/dish/${dishId}?increase=true`, 'DELETE');
-        await updateQuantityDisplay();
-        await updateCartCounter();
-    } catch (error) {
-        console.error('Error removing from cart:', error);
-    }
-}
 
 window.addToCart = addToCart;
 window.removeFromCart = removeFromCart;
@@ -403,20 +362,21 @@ function formatRating(rating) {
     </div>`;
 }
 
-async function updateQuantityDisplay() {
+export async function updateQuantityDisplay() {
     try {
         const cartData = await getCart();
-        if (!Array.isArray(cartData)) return;
-
-        document.querySelectorAll('.quantity').forEach(element => {
-            element.textContent = '0';
-        });
-
+        if (!cartData || !Array.isArray(cartData)) return;
+        
+        const quantities = {};
         cartData.forEach(item => {
-            const quantityElements = document.querySelectorAll(`.quantity[data-dish-id="${item.id}"]`);
-            quantityElements.forEach(element => {
-                element.textContent = item.amount.toString();
-            });
+            quantities[item.id] = item.amount;
+        });
+        
+        document.querySelectorAll('.quantity').forEach(element => {
+            const dishId = element.dataset.dishId;
+            if (dishId) {
+                element.textContent = quantities[dishId] || 0;
+            }
         });
     } catch (error) {
         console.error('Error updating quantities:', error);
@@ -426,40 +386,6 @@ async function updateQuantityDisplay() {
 export async function updateAllQuantities() {
     await updateQuantityDisplay();
     await updateCartCounter();
-}
-
-function getRandomLoadingIcon() {
-    const icons = [
-        '../images/loading-plate.svg',
-        '../images/loading-chef.svg',
-        '../images/loading-cooking.svg',
-        '../images/loading-plating.svg',
-        '../images/loading-menu.svg',
-        '../images/loading-nothing.svg',
-        '../images/loading-icon.svg',
-        '../images/loading-meme.svg',
-        '../images/loading-confused-chef.svg',
-        '../images/loading-cooking-fail.svg',
-        '../images/loading-searching.svg',
-        '../images/loading-cooking.svg',
-        '../images/loading-plating.svg',
-        '../images/loading-menu.svg'
-    ];
-    return icons[Math.floor(Math.random() * icons.length)];
-}
-
-function getErrorLoadingIcon() {
-    const memeIcons = [
-        '../images/loading-meme.svg',
-        '../images/loading-nothing.svg',
-        '../images/loading-confused-chef.svg',
-        '../images/loading-cooking-fail.svg',
-        '../images/loading-searching.svg',
-        '../images/loading-cooking.svg',
-        '../images/loading-plating.svg',
-        '../images/loading-menu.svg'
-    ];
-    return memeIcons[Math.floor(Math.random() * memeIcons.length)];
 }
 
 function getNoResultsMessage() {
@@ -493,24 +419,11 @@ function getNoResultsMessage() {
     return messages[Math.floor(Math.random() * messages.length)];
 }
 
-async function updateAuthUI() {
-    const isAuthenticated = await validateToken();
-    
-    document.querySelectorAll('.quantity-controls').forEach(control => {
-        control.style.display = isAuthenticated ? 'flex' : 'none';
-    });
-    
-    document.querySelectorAll('.rating-controls').forEach(control => {
-        control.style.display = isAuthenticated ? 'flex' : 'none';
-    });
-}
-
 function startTokenValidation() {
     setInterval(async () => {
-        const isValid = await validateToken();
-        if (!isValid && !window.location.pathname.includes('login.html')) {
+        if (await checkAuth() === false) {
             alert('Your session has expired. Please log in again.');
-            window.location.href = 'login.html';
+            window.location.href = getCleanUrl('login');
         }
     }, 60000);
 }

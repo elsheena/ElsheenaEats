@@ -1,14 +1,5 @@
 # This is a Web project for food delivery service
 
-## Important: Read First!
-Before diving into the code, please read the following documentation files:
-- `/js/developerReadMe.md` - JavaScript patterns and core functionality
-- `/css/designerReadMe.md` - CSS variables and styling guidelines
-- `structureReadMe.md` - Project structure and organization
-- `/pages/htmlReadMe.md` - HTML patterns and components
-
-These files contain essential information about the project's architecture and patterns.
-
 ## The website was made as a part of the course "Web Development" at the university
 Read Task.docx for more information about the project
 
@@ -53,3 +44,4 @@ I'm the only person who worked on the project.
 - [x] Add a button that resets the categories filter
 - [x] Add a note when there are no dishes with the selected category (for example soup with a mark vegetarian)
 - [x] Add a back button in the item page to take the user back to the previous page (cart, order, menu)
+- [ ] Fix fetching order and item details from the server with id from the url

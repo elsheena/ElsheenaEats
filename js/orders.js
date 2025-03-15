@@ -1,8 +1,14 @@
-import { apiRequest } from './api.js';
+import { getOrder, getOrders, confirmDelivery} from './api.js';
+import { getCleanUrl, getRandomLoadingIcon } from './main.js';
 
 async function loadOrders() {
     try {
-        const ordersList = await apiRequest('/api/order', 'GET');
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = getCleanUrl('login');
+            return;
+        }
+        const ordersList = await getOrders();   
         console.log('Initial orders list:', ordersList);
 
         if (!ordersList || ordersList.length === 0) {
@@ -13,7 +19,7 @@ async function loadOrders() {
         const ordersWithDetails = await Promise.all(
             ordersList.map(async (order) => {
                 try {
-                    const details = await apiRequest(`/api/order/${order.id}`, 'GET');
+                    const details = await getOrder(order.id);
                     console.log(`Details for order ${order.id}:`, details);
                     return details;
                 } catch (error) {
@@ -72,9 +78,9 @@ async function renderOrders(orders) {
         const dishImages = order.dishes && order.dishes.length > 0 
             ? order.dishes.slice(0, 4).map(dish => `
                 <div class="order-collage-item">
-                    <img src="${dish.image || '../images/placeholder-food.jpg'}" 
+                    <img src="${dish.image || getRandomLoadingIcon()}" 
                          alt="${dish.name}"
-                         onerror="this.src='../images/placeholder-food.jpg'"
+                         onerror="this.src='${getRandomLoadingIcon()}'"
                          loading="lazy">
                 </div>
             `).join('')
@@ -88,7 +94,7 @@ async function renderOrders(orders) {
                </div>`;
 
         orderElement.innerHTML = `
-            <a href="order.html?id=${order.id}" class="order-link">
+            <a href="${getCleanUrl('order', { id: order.id })}" class="order-link">
                 <div class="order-header">
                     <span class="order-number">Order #${order.id.slice(0, 8)}</span>
                     <span class="order-status ${statusClass}">${formatStatus(order.status)}</span>
@@ -138,20 +144,10 @@ function formatStatus(status) {
     }
 }
 
-async function confirmDelivery(orderId) {
-    try {
-        await apiRequest(`/api/order/${orderId}/status`, 'POST');
-        await loadOrders();
-    } catch (error) {
-        console.error('Error confirming delivery:', error);
-        alert('Failed to confirm delivery. Please try again.');
-    }
-}
-
 document.addEventListener('DOMContentLoaded', async () => {
     const token = localStorage.getItem('token');
     if (!token) {
-        window.location.href = 'login.html';
+        window.location.href = getCleanUrl('login');
         return;
     }
     await loadOrders();

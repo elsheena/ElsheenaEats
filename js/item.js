@@ -1,20 +1,12 @@
-import { apiRequest, updateCartCounter } from './api.js';
-
-const API_ENDPOINTS = {
-    dish: (id) => `/api/dish/${id}`,
-    ratingCheck: (id) => `/api/dish/${id}/rating/check`,
-    setRating: (id, score) => `/api/dish/${id}/rating?ratingScore=${score}`,
-    basketDish: (id) => `/api/basket/dish/${id}`,
-    orders: '/api/order',
-    orderDetails: (id) => `/api/order/${id}`
-};
+import { apiRequest, updateCartCounter, getDish, setRating, checkRating, removeFromCart, addToCart } from './api.js';
+import { getCleanUrl, getRandomLoadingIcon } from './main.js';
 
 let currentDish = null;
 let canRate = false;
 
 async function updateCartQuantity() {
     try {
-        const cart = await apiRequest('/api/basket', 'GET');
+        const cart = await apiRequest(API_ENDPOINTS.basket, 'GET');
         if (!cart || !Array.isArray(cart)) return;
         
         const quantities = {};
@@ -35,41 +27,6 @@ async function updateCartQuantity() {
     }
 }
 
-async function checkDeliveredOrders(dishId) {
-    try {
-        const ordersList = await apiRequest(API_ENDPOINTS.orders, 'GET');
-        console.log('Orders list:', ordersList);
-
-        if (!Array.isArray(ordersList) || ordersList.length === 0) {
-            return false;
-        }
-
-        for (const orderSummary of ordersList) {
-            if (orderSummary.status === 'Delivered') {
-                try {
-                    const orderDetails = await apiRequest(API_ENDPOINTS.orderDetails(orderSummary.id), 'GET');
-                    console.log('Order details:', orderDetails);
-
-                    if (orderDetails && Array.isArray(orderDetails.dishes)) {
-                        const hasDish = orderDetails.dishes.some(dish => dish.id === dishId);
-                        if (hasDish) {
-                            return true;
-                        }
-                    }
-                } catch (orderError) {
-                    console.error('Error fetching order details:', orderError);
-                    continue;
-                }
-            }
-        }
-        
-        return false;
-    } catch (error) {
-        console.error('Error checking orders:', error);
-        return false;
-    }
-}
-
 window.addEventListener('popstate', () => {
     const pathParts = window.location.pathname.split('/');
     const dishId = pathParts[pathParts.length - 1];
@@ -80,99 +37,24 @@ window.addEventListener('popstate', () => {
 
 async function loadDishDetails(dishId) {
     try {
-        const dish = await apiRequest(API_ENDPOINTS.dish(dishId), 'GET');
-        console.log('Dish data:', dish);
-        if (!dish) {
-            throw new Error('Dish not found');
-        }
-        currentDish = dish;
-        renderDish(dish);
-        
         const token = localStorage.getItem('token');
-        if (token) {
-            try {
-                const canRateResponse = await apiRequest(API_ENDPOINTS.ratingCheck(dishId), 'GET');
-                console.log('Can rate response:', canRateResponse);
-                canRate = canRateResponse === true;
-
-                const hasDeliveredOrder = await checkDeliveredOrders(dishId);
-                console.log('Has delivered order:', hasDeliveredOrder);
-                
-                const ratingControls = document.getElementById('rating-controls');
-                if (ratingControls) {
-                    ratingControls.style.display = 'flex';
-                    
-                    if (!canRate) {
-                        ratingControls.innerHTML = `
-                            <span class="rating-message">
-                                ✨ You have already rated this dish! Current rating: ${formatRating(dish.rating)}
-                            </span>
-                        `;
-                    } else if (!hasDeliveredOrder) {
-                        ratingControls.innerHTML = `
-                            <span class="rating-message">
-                                👋 You need to order and receive this dish before rating it
-                            </span>
-                        `;
-                    } else {
-                        ratingControls.innerHTML = `
-                            <span>Rate this dish:</span>
-                            <div class="rating-stars">
-                                ${Array.from({length: 5}, (_, i) => `
-                                    <div class="star-container">
-                                        <button class="star-btn half" 
-                                                onclick="window.setRating(${(i + 0.5) * 2})" 
-                                                onmouseover="window.highlightStars(${i + 0.5})"
-                                                onmouseout="window.resetStars()"
-                                                data-rating="${i + 0.5}">
-                                            ★
-                                        </button>
-                                        <button class="star-btn full" 
-                                                onclick="window.setRating(${(i + 1.0) * 2})" 
-                                                onmouseover="window.highlightStars(${i + 1})"
-                                                onmouseout="window.resetStars()"
-                                                data-rating="${i + 1}">
-                                            ★
-                                        </button>
-                                    </div>
-                                `).join('')}
-                            </div>
-                            <span class="rating-preview"></span>
-                        `;
-                    }
-                }
-                await updateCartQuantity();
-                await updateCartCounter();
-            } catch (error) {
-                console.error('Error checking rating ability:', error);
-                if (error.message.includes('401')) {
-                    window.location.href = 'login.html';
-                    return;
-                }
-                const ratingControls = document.getElementById('rating-controls');
-                if (ratingControls) {
-                    ratingControls.style.display = 'flex';
-                    ratingControls.innerHTML = `
-                        <span class="rating-message">
-                            ❌ Unable to check rating availability. Please try again later.
-                        </span>
-                    `;
-                }
-            }
-        } else {
-            const ratingControls = document.getElementById('rating-controls');
-            if (ratingControls) {
-                ratingControls.style.display = 'flex';
-                ratingControls.innerHTML = `
-                    <span class="rating-message">
-                        🔒 <a href="login.html">Log in</a> to rate dishes!
-                    </span>
-                `;
-            }
+        if (!token) {
+            window.location.href = getCleanUrl('login');
+            return;
         }
+
+        console.log('Loading dish:', dishId);
+        const dishDetails = await getDish(dishId);
+        console.log('Dish details:', dishDetails);
+        
+        renderDishDetails(dishDetails);
     } catch (error) {
-        console.error('Error loading dish:', error);
-        window.location.href = 'index.html';
+        console.error('Error in loadDishDetails:', error);
+        if (error.status === 401) {
+            window.location.href = getCleanUrl('login');
+            return;
+        }
+        displayError();
     }
 }
 
@@ -185,22 +67,22 @@ function setupBackButton() {
         if (referrer && referrer.startsWith(currentDomain)) {
             const referrerPath = new URL(referrer).pathname;
             
-            if (referrerPath.includes('/cart.html')) {
+            if (referrerPath.includes('/cart')) {
                 backButton.textContent = '← Back to Cart';
-                backButton.href = 'cart.html';
-            } else if (referrerPath.includes('/orders.html')) {
+                backButton.href = getCleanUrl('cart');
+            } else if (referrerPath.includes('/orders')) {
                 backButton.textContent = '← Back to Orders';
-                backButton.href = 'orders.html';
-            } else if (referrerPath.includes('/order.html')) {
+                backButton.href = getCleanUrl('orders');
+            } else if (referrerPath.includes('/order')) {
                 backButton.textContent = '← Back to Order';
                 backButton.href = document.referrer;
             } else {
                 backButton.textContent = '← Back to Menu';
-                backButton.href = 'index.html';
+                backButton.href = getCleanUrl('index');
             }
         } else {
             backButton.textContent = '← Back to Menu';
-            backButton.href = 'index.html';
+            backButton.href = getCleanUrl('index');
         }
 
         backButton.addEventListener('click', (e) => {
@@ -211,37 +93,23 @@ function setupBackButton() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const dishId = urlParams.get('id');
+    const pathParts = window.location.pathname.split('/');
+    const dishId = pathParts[pathParts.length - 1];
     
     if (!dishId) {
-        window.location.href = 'index.html';
+        console.error('No dish ID provided');
+        window.location.href = '/';
         return;
     }
 
-    setupBackButton();
-    await loadDishDetails(dishId);
+    try {
+        await loadDishDetails(dishId);
+        setupBackButton();
+    } catch (error) {
+        console.error('Error loading dish:', error);
+        window.location.href = '/';
+    }
 });
-
-async function addToCart(dishId) {
-    try {
-        await apiRequest(API_ENDPOINTS.basketDish(dishId), 'POST');
-        await updateCartQuantity();
-        await updateCartCounter();
-    } catch (error) {
-        console.error('Error adding to cart:', error);
-    }
-}
-
-async function removeFromCart(dishId) {
-    try {
-        await apiRequest(`/api/basket/dish/${dishId}?increase=true`, 'DELETE');
-        await updateCartQuantity();
-        await updateCartCounter();
-    } catch (error) {
-        console.error('Error removing from cart:', error);
-    }
-}
 
 async function setRating(score) {
     try {
@@ -261,9 +129,9 @@ async function setRating(score) {
             return;
         }
 
-        const response = await apiRequest(API_ENDPOINTS.setRating(currentDish.id, score), 'POST');
+        const response = await apiRequest(API_ENDPOINTS.dishRatingSet(currentDish.id, score), 'POST');
         if (response === true) {
-            const updatedDish = await apiRequest(API_ENDPOINTS.dish(currentDish.id), 'GET');
+            const updatedDish = await apiRequest(API_ENDPOINTS.dishId(currentDish.id), 'GET');
             currentDish = updatedDish;
             renderDish(updatedDish);
             
@@ -374,23 +242,6 @@ function renderDish(dish) {
             </div>
         </div>
     `;
-}
-
-function getRandomLoadingIcon() {
-    const icons = [
-        '../images/loading-plate.svg',
-        '../images/loading-chef.svg',
-        '../images/loading-cooking.svg',
-        '../images/loading-plating.svg',
-        '../images/loading-menu.svg',
-        '../images/loading-nothing.svg',
-        '../images/loading-icon.svg',
-        '../images/loading-meme.svg',
-        '../images/loading-confused-chef.svg',
-        '../images/loading-cooking-fail.svg',
-        '../images/loading-searching.svg'
-    ];
-    return icons[Math.floor(Math.random() * icons.length)];
 }
 
 function highlightStars(rating) {

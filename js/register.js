@@ -1,4 +1,5 @@
-import { apiRequest } from './api.js';
+import { apiRequest, register } from './api.js';
+import { getCleanUrl } from './main.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Toggle password button:', document.getElementById('toggle-password-register'));
@@ -68,10 +69,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 try {
-                    const response = await apiRequest('/api/account/register', 'POST', userData);
+                    const response = await register(userData);
                     if (response) {
                         alert('Registration successful! You can now log in.');
-                        window.location.href = 'login.html';
+                        window.location.href = getCleanUrl('login');
                     }
                 } catch (error) {
                     console.error('Registration error:', error);

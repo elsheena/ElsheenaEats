@@ -1,40 +1,33 @@
-import { apiRequest } from './api.js';
+import { login } from './api.js';
+import { getCleanUrl } from './main.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('login-form').addEventListener('submit', async function(event) {
-        event.preventDefault();
+    const loginForm = document.getElementById('login-form');
+    if (loginForm) {
+        loginForm.addEventListener('submit', async function(event) {
+            event.preventDefault();
 
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
 
-        console.log('Email:', email);
-        console.log('Password:', password);
+            try {
+                const data = await login(email, password);
+                localStorage.setItem('token', data.token);
+                window.location.href = getCleanUrl('index');
+            } catch (error) {
+                console.error('Login error:', error);
+                alert('Login failed: ' + error.message);
+            }
+        });
+    }
 
-        try {
-            const data = await apiRequest('/api/account/login', 'POST', { email, password });
-            console.log('Login response data:', data);
-            console.log('Token before storing:', data.token);
-            localStorage.setItem('token', data.token);
-            console.log('Token stored:', localStorage.getItem('token'));
-            window.location.href = 'index.html';
-        } catch (error) {
-            console.error('Login error:', error);
-            alert('Login failed: ' + error.message);
-        }
-    });
-
-    document.getElementById('toggle-password-login').addEventListener('click', function() {
-        const passwordInput = document.getElementById('password');
-        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-        passwordInput.setAttribute('type', type);
-        this.textContent = type === 'password' ? 'Show' : 'Hide';
-    });
+    const togglePasswordBtn = document.getElementById('toggle-password-login');
+    if (togglePasswordBtn) {
+        togglePasswordBtn.addEventListener('click', function() {
+            const passwordInput = document.getElementById('password');
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            this.textContent = type === 'password' ? 'Show' : 'Hide';
+        });
+    }
 });
-
-const token = localStorage.getItem('token');
-console.log('Retrieved token:', token);
-
-const headers = {
-    'Content-Type': 'application/json',
-    ...(token && { 'Authorization': `Bearer ${token}` })
-};

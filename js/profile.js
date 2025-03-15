@@ -1,8 +1,9 @@
 import { getProfile, updateProfile } from './api.js';
+import { getCleanUrl, checkAuth, updateAuthUI } from './main.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     if (!localStorage.getItem('token')) {
-        window.location.href = '/pages/login.html';
+        window.location.href = getCleanUrl('login');
         return;
     }
 
@@ -18,7 +19,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (error) {
         console.error('Error loading profile:', error);
         if (error.message.includes('401')) {
-            window.location.href = '/pages/login.html';
+            window.location.href = getCleanUrl('login');
         } else {
             const errorElement = document.getElementById('profileError');
             if (errorElement) {

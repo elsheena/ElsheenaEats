@@ -1,25 +1,9 @@
-import { API_BASE_URL, apiRequest, getCart, updateCartCounter } from './api.js';
-
-const itemDetailsCache = new Map();
+import { getCart, updateCartCounter, removeFromCart, addToCart, removeItemCompletely } from './api.js';
+import { getCleanUrl, checkAuth } from './main.js';
 
 let cartItemsContainer;
 let checkoutButton;
 let cartTotal;
-
-async function fetchItemDetails(itemId) {
-    if (itemDetailsCache.has(itemId)) {
-        return itemDetailsCache.get(itemId);
-    }
-    
-    try {
-        const itemData = await apiRequest(`/api/dish/${itemId}`, 'GET');
-        itemDetailsCache.set(itemId, itemData);
-        return itemData;
-    } catch (error) {
-        console.error('Failed to fetch item details:', error);
-        return null;
-    }
-}
 
 function getRandomLoadingIcon() {
     const icons = [
@@ -42,7 +26,7 @@ function getRandomLoadingIcon() {
     return icons[Math.floor(Math.random() * icons.length)];
 }
 
-async function loadCart() {
+export async function loadCart() {
     try {
         const cartData = await getCart();
         console.log('Cart data:', cartData);
@@ -61,13 +45,13 @@ async function loadCart() {
                 const itemElement = document.createElement('div');
                 itemElement.className = 'shopping-cart-item';
                 itemElement.innerHTML = `
-                    <a href="item.html?id=${item.id}" class="shopping-cart-item-image">
+                    <a href="${getCleanUrl('item', {id: item.id})}" class="shopping-cart-item-image">
                         <img src="${item.image || getRandomLoadingIcon()}" 
                              alt="${item.name}"
                              onerror="this.src='${getRandomLoadingIcon()}'">
                     </a>
                     <div class="shopping-cart-item-details">
-                        <a href="item.html?id=${item.id}" class="shopping-cart-item-name">
+                        <a href="${getCleanUrl('item', {id: item.id})}" class="shopping-cart-item-name">
                             <h3>${item.name}</h3>
                         </a>
                         <p class="shopping-cart-item-price">${item.price} ₽</p>
@@ -104,7 +88,7 @@ function showEmptyCartMessage() {
             <div class="shopping-cart-empty">
                 <h2>Your cart is empty</h2>
                 <p>Add some delicious dishes to get started! 🍽️</p>
-                <a href="index.html" class="btn btn-primary">Browse Menu</a>
+                <a href="${getCleanUrl('index')}" class="btn btn-primary">Browse Menu</a>
             </div>
         `;
     }
@@ -125,106 +109,6 @@ function showErrorMessage(message) {
                 <button onclick="location.reload()" class="btn btn-primary">Try Again</button>
             </div>
         `;
-    }
-}
-
-function renderCartItems(cartData) {
-    const container = document.getElementById('cart-items');
-    if (!container) return;
-
-    container.innerHTML = '';
-
-    cartData.forEach(item => {
-        const itemElement = document.createElement('div');
-        itemElement.className = 'shopping-cart-item';
-        itemElement.dataset.id = item.id;
-        
-        itemElement.innerHTML = `
-            <div class="shopping-cart-item-image">
-                <img src="${item.image || '../images/placeholder-food.jpg'}" alt="${item.name}">
-            </div>
-            <div class="shopping-cart-item-details">
-                <h3>${item.name}</h3>
-                <div class="shopping-cart-item-price">${item.price} ₽</div>
-            </div>
-            <div class="quantity-controls">
-                <button class="quantity-btn decrease-btn" data-id="${item.id}">-</button>
-                <span class="quantity">${item.amount}</span>
-                <button class="quantity-btn increase-btn" data-id="${item.id}">+</button>
-            </div>
-            <button class="remove-item-completely" data-id="${item.id}">Remove</button>
-        `;
-
-        itemElement.addEventListener('click', (e) => {
-            if (!e.target.closest('.quantity-controls') && !e.target.closest('.remove-item-completely')) {
-                window.location.href = `item.html?id=${item.id}`;
-            }
-        });
-
-        container.appendChild(itemElement);
-    });
-
-    addCartControlListeners();
-}
-
-function addCartControlListeners() {
-    document.querySelectorAll('.quantity-btn').forEach(btn => {
-        btn.replaceWith(btn.cloneNode(true));
-    });
-    
-    document.querySelectorAll('.remove-item-completely').forEach(btn => {
-        btn.replaceWith(btn.cloneNode(true));
-    });
-
-    document.querySelectorAll('.increase-btn').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            const id = e.target.dataset.id;
-            await addToCart(id);
-            await updateCart();
-        });
-    });
-
-    document.querySelectorAll('.decrease-btn').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            const id = e.target.dataset.id;
-            await removeFromCart(id);
-            await updateCart();
-        });
-    });
-
-    document.querySelectorAll('.remove-item-completely').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            const id = e.target.dataset.id;
-            await removeItemCompletely(id);
-            await updateCart();
-        });
-    });
-}
-
-function updateTotal(cartItems) {
-    const totalElement = document.getElementById('cart-total');
-    if (!totalElement) {
-        console.error('Total element not found');
-        return;
-    }
-
-    if (!cartItems || !cartItems.length) {
-        totalElement.textContent = '0 ₽';
-        const checkoutBtn = document.getElementById('checkout-btn');
-        if (checkoutBtn) {
-            checkoutBtn.style.display = 'none';
-        }
-        return;
-    }
-
-    const total = cartItems.reduce((sum, item) => {
-        return sum + (item.price * item.amount);
-    }, 0);
-
-    totalElement.textContent = `${total} ₽`;
-    const checkoutBtn = document.getElementById('checkout-btn');
-    if (checkoutBtn) {
-        checkoutBtn.style.display = 'block';
     }
 }
 
@@ -339,71 +223,20 @@ function addCartEventListeners(container) {
     });
 }
 
-async function updateCartQuantity(dishId, increase) {
-    try {
-        if (increase) {
-            await apiRequest(`/api/basket/dish/${dishId}`, 'POST');
-        } else {
-            await apiRequest(`/api/basket/dish/${dishId}?increase=true`, 'DELETE');
-        }
-        await fetchCartItems();
-        await updateCartCounter();
-    } catch (error) {
-        console.error('Error updating quantity:', error);
-    }
-}
-
-async function addToCart(dishId) {
-    try {
-        await apiRequest(`/api/basket/dish/${dishId}`, 'POST');
-        await loadCart();
-        await updateCartCounter();
-    } catch (error) {
-        console.error('Error adding to cart:', error);
-    }
-}
-
-async function removeFromCart(dishId) {
-    try {
-        await apiRequest(`/api/basket/dish/${dishId}?increase=true`, 'DELETE');
-        await loadCart();
-        await updateCartCounter();
-    } catch (error) {
-        console.error('Error removing from cart:', error);
-    }
-}
-
-async function removeItemCompletely(dishId) {
-    try {
-        await apiRequest(`/api/basket/dish/${dishId}?increase=false`, 'DELETE');
-        await loadCart();
-        await updateCartCounter();
-    } catch (error) {
-        console.error('Error removing item from cart:', error);
-    }
-}
-
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('Cart page initialized');
     cartItemsContainer = document.getElementById('shopping-cart-items');
     checkoutButton = document.getElementById('checkout-btn');
     cartTotal = document.getElementById('cart-total');
 
-    const token = localStorage.getItem('token');
-    console.log('Retrieved token:', token);
+    if (await checkAuth()) {
+        await loadCart();
 
-    if (!token) {
-        alert('You need to log in first.');
-        window.location.href = 'login.html';
-        return;
-    }
-
-    await loadCart();
-
-    if (checkoutButton) {
-        checkoutButton.addEventListener('click', () => {
-            window.location.href = 'purchase.html';
-        });
+        if (checkoutButton) {
+            checkoutButton.addEventListener('click', () => {
+                window.location.href = getCleanUrl('purchase');
+            });
+        }
     }
 });
 

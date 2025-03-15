@@ -16,7 +16,6 @@
     gap: 2rem;
 }
 
-/* Order Summary Section */
 .order-summary {
     background: var(--background-secondary);
     border-radius: var(--border-radius-lg);
@@ -83,7 +82,6 @@
     font-size: 1.2rem;
 }
 
-/* Delivery Details Section */
 .delivery-details {
     background: var(--background-secondary);
     border-radius: var(--border-radius-lg);
@@ -132,7 +130,6 @@
     margin-top: 1rem;
 }
 
-/* Responsive Design */
 @media (max-width: 768px) {
     .purchase-grid {
         grid-template-columns: 1fr;

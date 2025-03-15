@@ -1,32 +1,26 @@
-import { apiRequest } from './api.js';
+import { apiRequest, getOrder, confirmDelivery } from './api.js';
+import { getCleanUrl, getRandomLoadingIcon } from './main.js';
+// https://www.thymeleaf.org/doc/articles/standardurlsyntax.html
 
-async function loadOrderDetails() {
+async function loadOrderDetails(orderId) {
     try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            window.location.href = 'login.html';
-            return;
-        }
-
-        const urlParams = new URLSearchParams(window.location.search);
-        const orderId = urlParams.get('id');
-        
-        if (!orderId) {
-            throw new Error('No order ID provided');
-        }
-
         console.log('Loading order:', orderId);
         const orderDetails = await apiRequest(`/api/order/${orderId}`, 'GET');
         console.log('Order details:', orderDetails);
         
+        if (!orderDetails) {
+            displayError();
+            return;
+        }
+        
         renderOrderDetails(orderDetails);
     } catch (error) {
         console.error('Error in loadOrderDetails:', error);
-        if (error.status === 401) {
-            window.location.href = 'login.html';
-            return;
+        if (error.message.includes('401')) {
+            window.location.href = getCleanUrl('login');
+        } else {
+            displayError();
         }
-        displayError();
     }
 }
 
@@ -67,7 +61,7 @@ function renderOrderDetails(order) {
             <div class="order-items">
                 ${order.dishes && order.dishes.length > 0 ? 
                     order.dishes.map(dish => `
-                        <div class="order-item" onclick="window.location.href='item.html?id=${dish.id}'" style="cursor: pointer;">
+                        <div class="order-item" onclick="window.location.href='item/${dish.id}'" style="cursor: pointer;">
                             <div class="order-item-image">
                                 <img src="${dish.image || getRandomLoadingIcon()}" 
                                      alt="${dish.name}"
@@ -129,40 +123,24 @@ function formatStatus(status) {
     }
 }
 
-async function confirmDelivery(orderId) {
-    try {
-        await apiRequest(`/api/order/${orderId}/status`, 'POST');
-        await loadOrderDetails(); 
-    } catch (error) {
-        console.error('Error confirming delivery:', error);
-        alert('Failed to confirm delivery. Please try again.');
-    }
-}
-
 document.addEventListener('DOMContentLoaded', async () => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-        window.location.href = 'login.html';
+    const pathParts = window.location.pathname.split('/');
+    const orderId = pathParts[pathParts.length - 1];
+    
+    if (orderId === '' || orderId === 'index.html') {
+        window.location.href = getCleanUrl('orders');
         return;
     }
-    await loadOrderDetails();
+
+    try {
+        if (!await checkAuth()) {
+            return;
+        }
+        await loadOrderDetails(orderId);
+    } catch (error) {
+        console.error('Error loading order:', error);
+        displayError();
+    }
 });
 
 window.confirmDelivery = confirmDelivery;
-
-function getRandomLoadingIcon() {
-    const icons = [
-        '../images/loading-plate.svg',
-        '../images/loading-chef.svg',
-        '../images/loading-cooking.svg',
-        '../images/loading-plating.svg',
-        '../images/loading-menu.svg',
-        '../images/loading-nothing.svg',
-        '../images/loading-icon.svg',
-        '../images/loading-meme.svg',
-        '../images/loading-confused-chef.svg',
-        '../images/loading-cooking-fail.svg',
-        '../images/loading-searching.svg'
-    ];
-    return icons[Math.floor(Math.random() * icons.length)];
-}

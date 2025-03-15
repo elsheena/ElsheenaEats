@@ -1,9 +1,10 @@
-import { apiRequest, getCart } from './api.js';
+import { getCart, createOrder, getProfile } from './api.js';
+import { getCleanUrl } from './main.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     const token = localStorage.getItem('token');
     if (!token) {
-        window.location.href = 'login.html';
+        window.location.href = getCleanUrl('login');
         return;
     }
 
@@ -13,7 +14,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (!Array.isArray(cartData) || cartData.length === 0) {
             alert('Your cart is empty');
-            window.location.href = 'cart.html';
+            window.location.href = getCleanUrl('cart');
             return;
         }
 
@@ -49,7 +50,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         deliveryTimeInput.max = maxTime.toLocaleString('sv-SE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(' ', 'T');
         deliveryTimeInput.value = minTime.toLocaleString('sv-SE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(' ', 'T');
 
-        const profile = await apiRequest('/api/account/profile', 'GET');
+        const profile = await getProfile();
         
         if (profile) {
             const addressInput = document.getElementById('address');
@@ -133,11 +134,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const cartData = await getCart();
                 if (!Array.isArray(cartData) || cartData.length === 0) {
                     alert('Your cart is empty');
-                    window.location.href = 'cart.html';
+                    window.location.href = getCleanUrl('cart');
                     return;
                 }
 
-                const response = await apiRequest('/api/order', 'POST', orderData);
+                const response = await createOrder(orderData);
                 console.log('Order response:', response);
 
                 const cartCounter = document.getElementById('cart-counter');
@@ -147,7 +148,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
 
                 alert('Order placed successfully!');
-                window.location.href = 'orders.html';
+                window.location.href = getCleanUrl('orders');
             } catch (error) {
                 console.error('Error placing order:', error);
                 if (error.message.includes('400')) {
