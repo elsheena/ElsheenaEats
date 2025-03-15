@@ -91,10 +91,12 @@ async function loadDishDetails(dishId) {
         const token = localStorage.getItem('token');
         if (token) {
             try {
+                // Check if user can rate
                 const canRateResponse = await apiRequest(API_ENDPOINTS.ratingCheck(dishId), 'GET');
                 console.log('Can rate response:', canRateResponse);
                 canRate = canRateResponse === true;
 
+                // Check if user has delivered orders with this dish
                 const hasDeliveredOrder = await checkDeliveredOrders(dishId);
                 console.log('Has delivered order:', hasDeliveredOrder);
                 
@@ -102,31 +104,36 @@ async function loadDishDetails(dishId) {
                 if (ratingControls) {
                     ratingControls.style.display = 'flex';
                     
-                    if (canRate && hasDeliveredOrder) {
+                    if (!canRate) {
+                        // User has already rated
                         ratingControls.innerHTML = `
-                            <span>Rate this dish (0-10):</span>
+                            <span class="rating-message">
+                                ✨ You have already rated this dish! Current rating: ${formatRating(dish.rating)}
+                            </span>
+                        `;
+                    } else if (!hasDeliveredOrder) {
+                        // User hasn't ordered or received the dish
+                        ratingControls.innerHTML = `
+                            <span class="rating-message">
+                                👋 You need to order and receive this dish before rating it
+                            </span>
+                        `;
+                    } else {
+                        // User can rate
+                        ratingControls.innerHTML = `
+                            <span>Rate this dish:</span>
                             <div class="rating-stars">
-                                ${Array.from({length: 11}, (_, i) => `
-                                    <button class="star-btn" onclick="window.setRating(${i})" title="Rate ${i} points">
-                                        ${i} ⭐
+                                ${Array.from({length: 10}, (_, i) => `
+                                    <button class="star-btn" 
+                                            onclick="window.setRating(${(i + 1)})" 
+                                            onmouseover="window.highlightStars(${i + 1})"
+                                            onmouseout="window.resetStars()"
+                                            data-rating="${i + 1}">
+                                        ⭐
                                     </button>
                                 `).join('')}
                             </div>
-                        `;
-                    } else {
-                        let message;
-                        if (!hasDeliveredOrder) {
-                            message = '👋 You need to order and receive this dish before rating it';
-                        } else if (!canRate && dish.rating !== null) {
-                            message = '✨ You have already rated this dish!';
-                        } else {
-                            message = '⏳ Please wait for your order to be delivered before rating';
-                        }
-                        
-                        ratingControls.innerHTML = `
-                            <span class="rating-message">
-                                ${message}
-                            </span>
+                            <span class="rating-preview"></span>
                         `;
                     }
                 }
@@ -225,7 +232,7 @@ async function setRating(score) {
             if (ratingControls) {
                 ratingControls.innerHTML = `
                     <span class="rating-message">
-                        ✨ Thanks for rating this dish with ${score} points!
+                        ✨ Thanks for rating this dish! ${'⭐'.repeat(score)}
                     </span>
                 `;
             }
@@ -250,7 +257,16 @@ function formatRating(rating) {
     if (!Number.isFinite(ratingNum)) {
         return '⭐ No ratings yet';
     }
-    return `⭐ ${ratingNum.toFixed(1)}/10`;
+    
+    // Convert 10-point scale to 5 stars (divide by 2)
+    const starCount = ratingNum / 2;
+    const fullStars = Math.floor(starCount);
+    const hasHalfStar = starCount % 1 >= 0.5;
+    
+    return '⭐'.repeat(fullStars) + 
+           (hasHalfStar ? '⭐' : '') + 
+           '☆'.repeat(5 - fullStars - (hasHalfStar ? 1 : 0)) +
+           ` ${ratingNum.toFixed(1)}/10`;
 }
 
 function renderDish(dish) {
@@ -259,20 +275,27 @@ function renderDish(dish) {
 
     const ratingControls = `
         <div id="rating-controls" class="rating-controls" style="display: none;">
-            <span>Rate this dish (0-10):</span>
+            <span>Rate this dish:</span>
             <div class="rating-stars">
-                ${Array.from({length: 11}, (_, i) => `
-                    <button class="star-btn" onclick="window.setRating(${i})" title="Rate ${i} points">
-                        ${i} ⭐
+                ${Array.from({length: 10}, (_, i) => `
+                    <button class="star-btn" 
+                            onclick="window.setRating(${(i + 1)})" 
+                            onmouseover="window.highlightStars(${i + 1})"
+                            onmouseout="window.resetStars()"
+                            data-rating="${i + 1}">
+                        ⭐
                     </button>
                 `).join('')}
             </div>
+            <span class="rating-preview"></span>
         </div>
     `;
 
     container.innerHTML = `
         <div class="dish-image-large">
-            <img src="${dish.image || 'images/placeholder.jpg'}" alt="${dish.name}">
+            <img src="${dish.image || getRandomLoadingIcon()}" 
+                 alt="${dish.name}"
+                 onerror="this.src='${getRandomLoadingIcon()}'">
         </div>
         <div class="dish-info-detailed">
             <div class="dish-header">
@@ -298,6 +321,48 @@ function renderDish(dish) {
     `;
 }
 
+function getRandomLoadingIcon() {
+    const icons = [
+        '../images/loading-plate.svg',
+        '../images/loading-chef.svg',
+        '../images/loading-cooking.svg',
+        '../images/loading-plating.svg',
+        '../images/loading-menu.svg',
+        '../images/loading-nothing.svg',
+        '../images/loading-icon.svg',
+        '../images/loading-meme.svg',
+        '../images/loading-confused-chef.svg',
+        '../images/loading-cooking-fail.svg',
+        '../images/loading-searching.svg'
+    ];
+    return icons[Math.floor(Math.random() * icons.length)];
+}
+
+// Add these new functions for star highlighting
+function highlightStars(rating) {
+    const stars = document.querySelectorAll('.star-btn');
+    const preview = document.querySelector('.rating-preview');
+    
+    stars.forEach((star, index) => {
+        if (index < rating) {
+            star.classList.add('active');
+        } else {
+            star.classList.remove('active');
+        }
+    });
+    
+    preview.textContent = `${rating}/10`;
+}
+
+function resetStars() {
+    const stars = document.querySelectorAll('.star-btn');
+    const preview = document.querySelector('.rating-preview');
+    stars.forEach(star => star.classList.remove('active'));
+    preview.textContent = '';
+}
+
 window.addToCart = addToCart;
 window.removeFromCart = removeFromCart;
 window.setRating = setRating;
+window.highlightStars = highlightStars;
+window.resetStars = resetStars;

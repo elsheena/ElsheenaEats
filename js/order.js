@@ -59,30 +59,30 @@ function renderOrderDetails(order) {
                     <div class="completed-icon">✓</div>
                     <div class="completed-text">
                         <h3>Order Completed</h3>
-                        <p>This order has been delivered</p>
+                        <p>Delivered on ${formattedDeliveryTime}</p>
                     </div>
                 </div>
-            ` : `
-                <div class="order-items">
-                    ${order.dishes && order.dishes.length > 0 ? 
-                        order.dishes.map(dish => `
-                            <div class="order-item" onclick="window.location.href='item.html?id=${dish.id}'" style="cursor: pointer;">
-                                <div class="order-item-image">
-                                    <img src="${dish.image || '../images/placeholder-food.jpg'}" 
-                                         alt="${dish.name}"
-                                         onerror="this.src='../images/placeholder-food.jpg'">
-                                </div>
-                                <div class="order-item-details">
-                                    <h4>${dish.name}</h4>
-                                    <span class="order-item-price">${dish.price} ₽ × ${dish.amount}</span>
-                                </div>
-                                <span class="order-item-total">${dish.totalPrice} ₽</span>
+            ` : ''}
+
+            <div class="order-items">
+                ${order.dishes && order.dishes.length > 0 ? 
+                    order.dishes.map(dish => `
+                        <div class="order-item" onclick="window.location.href='item.html?id=${dish.id}'" style="cursor: pointer;">
+                            <div class="order-item-image">
+                                <img src="${dish.image || getRandomLoadingIcon()}" 
+                                     alt="${dish.name}"
+                                     onerror="this.src='${getRandomLoadingIcon()}'">
                             </div>
-                        `).join('') 
-                        : '<div class="orders-empty">No items in this order</div>'
-                    }
-                </div>
-            `}
+                            <div class="order-item-details">
+                                <h4>${dish.name}</h4>
+                                <span class="order-item-price">${dish.price} ₽ × ${dish.amount}</span>
+                            </div>
+                            <span class="order-item-total">${dish.totalPrice} ₽</span>
+                        </div>
+                    `).join('') 
+                    : '<div class="orders-empty">No items in this order</div>'
+                }
+            </div>
 
             <div class="order-total">
                 Total: ${order.price} ₽
@@ -149,3 +149,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 window.confirmDelivery = confirmDelivery;
+
+function getRandomLoadingIcon() {
+    const icons = [
+        '../images/loading-plate.svg',
+        '../images/loading-chef.svg',
+        '../images/loading-cooking.svg',
+        '../images/loading-plating.svg',
+        '../images/loading-menu.svg',
+        '../images/loading-nothing.svg',
+        '../images/loading-icon.svg',
+        '../images/loading-meme.svg',
+        '../images/loading-confused-chef.svg',
+        '../images/loading-cooking-fail.svg',
+        '../images/loading-searching.svg'
+    ];
+    return icons[Math.floor(Math.random() * icons.length)];
+}

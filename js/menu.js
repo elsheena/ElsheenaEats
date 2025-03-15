@@ -380,7 +380,16 @@ function formatRating(rating) {
     if (!Number.isFinite(ratingNum)) {
         return '⭐ No ratings yet';
     }
-    return `⭐ ${ratingNum.toFixed(1)}/10`;
+    
+    // Convert 10-point scale to 5 stars (divide by 2)
+    const starCount = ratingNum / 2;
+    const fullStars = Math.floor(starCount);
+    const hasHalfStar = starCount % 1 >= 0.5;
+    
+    return '⭐'.repeat(fullStars) + 
+           (hasHalfStar ? '⭐' : '') + 
+           '☆'.repeat(5 - fullStars - (hasHalfStar ? 1 : 0)) +
+           ` ${ratingNum.toFixed(1)}/10`;
 }
 
 async function updateQuantityDisplay() {

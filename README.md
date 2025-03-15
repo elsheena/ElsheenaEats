@@ -48,7 +48,8 @@ The website has been tested on:
 I'm the only person who worked on the project.
 
 ### Things to be done:
-- [ ] Implement dish rating system and styling
+- [x] Implement dish rating system and styling
+- [ ] Make it so that the rating can be shown as half stars
 - [x] Add a button that resets the categories filter
 - [x] Add a note when there are no dishes with the selected category (for example soup with a mark vegetarian)
 

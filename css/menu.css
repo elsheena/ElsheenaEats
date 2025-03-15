@@ -443,3 +443,26 @@ main.container {
     align-items: center;
     text-align: center;
 }
+
+.rating-display {
+    font-family: system-ui;
+    letter-spacing: 2px;
+    color: #ffd700;  /* Golden color for stars */
+}
+
+.rating-display ★ {
+    color: #ffd700;  /* Full star color */
+}
+
+.rating-display ½ {
+    color: #ffd700;  /* Half star color */
+}
+
+.rating-display ☆ {
+    color: #d4d4d4;  /* Empty star color */
+    opacity: 0.5;
+}
+
+.empty-star {
+    opacity: 0.3;
+}
