@@ -66,6 +66,24 @@ async function initializeFilters() {
     
     const categoryContainer = document.querySelector('.categories');
     
+    const resetButton = document.createElement('button');
+    resetButton.className = 'reset-filters-btn btn-primary';
+    resetButton.innerHTML = '🔄 Reset Filters';
+    resetButton.addEventListener('click', resetFilters);
+    
+    const filtersWrapper = document.querySelector('.filter-row');
+    if (filtersWrapper) {
+        const rightGroup = filtersWrapper.querySelector('.right-group');
+        if (rightGroup) {
+            rightGroup.appendChild(resetButton);
+        } else {
+            const newRightGroup = document.createElement('div');
+            newRightGroup.className = 'right-group';
+            newRightGroup.appendChild(resetButton);
+            filtersWrapper.appendChild(newRightGroup);
+        }
+    }
+    
     CATEGORIES.forEach(category => {
         const button = document.createElement('button');
         button.className = 'category-btn';
@@ -125,6 +143,22 @@ function toggleCategory(category) {
     loadDishes();
 }
 
+function resetFilters() {
+    currentFilters.categories.clear();
+    currentFilters.vegetarian = false;
+    currentFilters.sorting = 'NameAsc';
+    currentFilters.page = 1;
+    
+    document.querySelectorAll('.category-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.getElementById('vegetarian-toggle').checked = false;
+    document.getElementById('sort-select').value = 'NameAsc';
+    
+    updateURLParameters();
+    loadDishes();
+}
+
 async function loadDishes() {
     try {
         const queryParams = new URLSearchParams();
@@ -144,19 +178,65 @@ async function loadDishes() {
         renderPagination(response.pagination.count);
     } catch (error) {
         console.error('Error loading dishes:', error);
+        const container = document.getElementById('dishes-container');
+        if (container) {
+            container.innerHTML = `
+                <div class="empty-dishes-message">
+                    <div class="no-dishes-content">
+                        <h3>🤔 Oops! Something went wrong</h3>
+                        <p>We couldn't find any dishes with your current filters. 🍽️</p>
+                        <p>Our chefs are probably cooking up something delicious! 👨‍🍳✨</p>
+                        <p>Try <button onclick="resetFilters()" class="reset-link">resetting the filters</button> or check back later!</p>
+                    </div>
+                </div>
+            `;
+            const paginationElement = document.getElementById('pagination');
+            if (paginationElement) {
+                paginationElement.style.display = 'none';
+            }
+        }
     }
 }
 
 async function renderDishes(dishes) {
     const container = document.getElementById('dishes-container');
+    const paginationElement = document.getElementById('pagination');
     if (!container) return;
 
     container.innerHTML = '';
+
+    if (!dishes || dishes.length === 0) {
+        const emptyMessage = document.createElement('div');
+        emptyMessage.className = 'empty-dishes-message';
+        emptyMessage.innerHTML = `
+            <div class="no-dishes-content">
+                <h3>🔍 No dishes found</h3>
+                <p>We couldn't find any dishes matching your filters right now. 🍽️</p>
+                <p>Our chefs are working on adding more delicious options! 👨‍🍳✨</p>
+                <p>You can try:</p>
+                <ul style="text-align: left; margin: 10px 0;">
+                    <li>Removing some category filters</li>
+                    <li>Unchecking the vegetarian option</li>
+                    <li><button onclick="resetFilters()" class="reset-link">Reset all filters</button></li>
+                </ul>
+            </div>
+        `;
+        container.appendChild(emptyMessage);
+        if (paginationElement) {
+            paginationElement.style.display = 'none';
+        }
+        return;
+    }
+
+    if (paginationElement) {
+        paginationElement.style.display = 'flex';
+    }
 
     dishes.forEach(dish => {
         const dishElement = document.createElement('div');
         dishElement.className = 'dish-card';
         dishElement.dataset.id = dish.id;
+        
         dishElement.innerHTML = `
             <div class="dish-image">
                 <img src="${dish.image || 'images/placeholder.jpg'}" alt="${dish.name}">
@@ -169,7 +249,7 @@ async function renderDishes(dishes) {
                 <p class="dish-description">${dish.description || ''}</p>
                 <div class="dish-meta">
                     ${dish.vegetarian ? '<span class="vegetarian-badge">🌱 Vegetarian</span>' : ''}
-                    <span class="rating">⭐ ${dish.rating ? dish.rating.toFixed(1) : 'N/A'}</span>
+                    <span class="rating" title="Dish rating">${formatRating(dish.rating)}</span>
                 </div>
                 <div class="dish-actions">
                     <div class="quantity-controls">
@@ -183,14 +263,16 @@ async function renderDishes(dishes) {
 
         dishElement.addEventListener('click', (e) => {
             if (!e.target.closest('.quantity-controls')) {
-                window.location.href = `item.html?id=${dish.id}`;
+                e.preventDefault();
+                const url = `item.html?id=${dish.id}`;
+                window.location.href = url;
             }
         });
 
         container.appendChild(dishElement);
     });
 
-    await updateCartQuantities();
+    await updateQuantityDisplay();
 }
 
 function renderPagination(totalPages) {
@@ -257,8 +339,8 @@ window.addEventListener('popstate', () => {
 
 async function addToCart(dishId) {
     try {
-        await apiRequest(API_ENDPOINTS.basketDish(dishId), 'POST');
-        await updateCartQuantities();
+        await apiRequest(`/api/basket/dish/${dishId}`, 'POST');
+        await updateQuantityDisplay();
         await updateCartCounter();
     } catch (error) {
         console.error('Error adding to cart:', error);
@@ -268,7 +350,7 @@ async function addToCart(dishId) {
 async function removeFromCart(dishId) {
     try {
         await apiRequest(`/api/basket/dish/${dishId}?increase=true`, 'DELETE');
-        await updateCartQuantities();
+        await updateQuantityDisplay();
         await updateCartCounter();
     } catch (error) {
         console.error('Error removing from cart:', error);
@@ -277,3 +359,40 @@ async function removeFromCart(dishId) {
 
 window.addToCart = addToCart;
 window.removeFromCart = removeFromCart;
+window.resetFilters = resetFilters;
+
+function formatRating(rating) {
+    if (rating === null || rating === undefined) {
+        return '⭐ No ratings yet';
+    }
+    const ratingNum = parseFloat(rating);
+    if (!Number.isFinite(ratingNum)) {
+        return '⭐ No ratings yet';
+    }
+    return `⭐ ${ratingNum.toFixed(1)}/10`;
+}
+
+async function updateQuantityDisplay() {
+    try {
+        const cartData = await getCart();
+        if (!Array.isArray(cartData)) return;
+
+        document.querySelectorAll('.quantity').forEach(element => {
+            element.textContent = '0';
+        });
+
+        cartData.forEach(item => {
+            const quantityElements = document.querySelectorAll(`.quantity[data-dish-id="${item.id}"]`);
+            quantityElements.forEach(element => {
+                element.textContent = item.amount.toString();
+            });
+        });
+    } catch (error) {
+        console.error('Error updating quantities:', error);
+    }
+}
+
+export async function updateAllQuantities() {
+    await updateQuantityDisplay();
+    await updateCartCounter();
+}

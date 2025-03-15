@@ -86,7 +86,10 @@
 
 .rating-display {
     color: var(--text-secondary);
-    font-size: var(--font-size-sm);
+    font-size: var(--font-size-md);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
 }
 
 .dish-description {
@@ -135,30 +138,47 @@
 }
 
 .rating-controls {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-md);
+    margin-top: 16px;
+    padding: 16px;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    background: #f9f9f9;
 }
 
 .rating-stars {
     display: flex;
-    gap: var(--spacing-xs);
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 8px;
 }
 
 .star-btn {
-    background: none;
-    border: 1px solid var(--border-color);
-    padding: var(--spacing-xs) var(--spacing-sm);
-    border-radius: var(--border-radius-sm);
+    padding: 8px 16px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: white;
     cursor: pointer;
-    transition: all var(--transition-fast);
-    color: var(--text-secondary);
+    transition: all 0.2s;
 }
 
 .star-btn:hover {
-    background: var(--background-tertiary);
-    border-color: var(--primary-color);
+    background: #f0f0f0;
+    border-color: #ccc;
+}
+
+.rating-message {
+    color: #666;
+    font-size: 0.9em;
+}
+
+.rating-message a {
     color: var(--primary-color);
+    text-decoration: none;
+    font-weight: var(--font-weight-medium);
+}
+
+.rating-message a:hover {
+    text-decoration: underline;
 }
 
 @media (max-width: 768px) {

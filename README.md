@@ -6,6 +6,7 @@ Before diving into the code, please read the following documentation files:
 - `/css/designerReadMe.md` - CSS variables and styling guidelines
 - `structureReadMe.md` - Project structure and organization
 - `/pages/htmlReadMe.md` - HTML patterns and components
+
 These files contain essential information about the project's architecture and patterns.
 
 ## The website was made as a part of the course "Web Development" at the university
@@ -25,6 +26,7 @@ The website was built using:
 - CSS3 for styling
 - JavaScript for interactivity
 - Swagger UI for API documentation
+
 I tried not to use any frameworks or libraries while developing the website.
 
 ### Project Setup
@@ -42,10 +44,11 @@ The website has been tested on:
 
 ### Contributors
 - [@elsheena](https://github.com/elsheena) - Mina Mikhaeil - Web Developer.
+
 I'm the only person who worked on the project.
 
 ### Things to be done:
 - [ ] Implement dish rating system and styling
-- [ ] Add a button that resets the categories filter
-- [ ] Add a note when there are no dishes with the selected category (for example soup with a mark vegetarian)
+- [x] Add a button that resets the categories filter
+- [x] Add a note when there are no dishes with the selected category (for example soup with a mark vegetarian)
 

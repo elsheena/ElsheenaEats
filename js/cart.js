@@ -26,35 +26,87 @@ async function loadCart() {
         const cartData = await getCart();
         console.log('Cart data:', cartData);
 
-        if (cartData && cartData.dishes && cartData.dishes.length > 0) {
-            console.log('Rendering cart items');
-            await renderCartItems(cartData.dishes);
-            updateTotal(cartData.dishes);
-            await updateCartCounter();
-        } else {
-            console.log('Cart is empty, displaying empty message');
-            displayEmptyCart();
+        if (!Array.isArray(cartData) || cartData.length === 0) {
+            showEmptyCartMessage();
+            return;
+        }
+
+        if (cartItemsContainer) {
+            cartItemsContainer.innerHTML = '';
+            let total = 0;
+
+            cartData.forEach(item => {
+                total += item.totalPrice;
+                const itemElement = document.createElement('div');
+                itemElement.className = 'shopping-cart-item';
+                itemElement.innerHTML = `
+                    <a href="item.html?id=${item.id}" class="shopping-cart-item-image">
+                        <img src="${item.image || '../images/placeholder-food.jpg'}" 
+                             alt="${item.name}"
+                             onerror="this.src='../images/placeholder-food.jpg'">
+                    </a>
+                    <div class="shopping-cart-item-details">
+                        <a href="item.html?id=${item.id}" class="shopping-cart-item-name">
+                            <h3>${item.name}</h3>
+                        </a>
+                        <p class="shopping-cart-item-price">${item.price} ₽</p>
+                    </div>
+                    <div class="quantity-controls">
+                        <button class="quantity-btn decrease" data-dish-id="${item.id}">-</button>
+                        <span class="quantity">${item.amount}</span>
+                        <button class="quantity-btn increase" data-dish-id="${item.id}">+</button>
+                    </div>
+                    <button class="remove-item" data-dish-id="${item.id}">
+                        🗑️ Remove
+                    </button>
+                `;
+                cartItemsContainer.appendChild(itemElement);
+            });
+
+            if (cartTotal) {
+                cartTotal.textContent = `${total.toFixed(0)} ₽`;
+            }
+
+            if (checkoutButton) {
+                checkoutButton.style.display = 'block';
+            }
+
+            addCartEventListeners(cartItemsContainer);
         }
     } catch (error) {
         console.error('Error loading cart:', error);
-        displayEmptyCart();
+        showErrorMessage('Failed to load cart. Please try again.');
     }
 }
 
-function displayEmptyCart() {
-    const cartContainer = document.getElementById('cart-items');
-    if (!cartContainer) {
-        console.error('Cart container not found');
-        return;
+function showEmptyCartMessage() {
+    if (cartItemsContainer) {
+        cartItemsContainer.innerHTML = `
+            <div class="shopping-cart-empty">
+                <h2>Your cart is empty</h2>
+                <p>Add some delicious dishes to get started! 🍽️</p>
+                <a href="index.html" class="btn btn-primary">Browse Menu</a>
+            </div>
+        `;
     }
-    
-    cartContainer.innerHTML = `
-        <div class="shopping-cart-empty">
-            <p>Your cart is empty</p>
-            <a href="/" class="btn btn-primary">Continue Shopping</a>
-        </div>
-    `;
-    updateTotal(null);
+    if (cartTotal) {
+        cartTotal.textContent = '0 ₽';
+    }
+    if (checkoutButton) {
+        checkoutButton.style.display = 'none';
+    }
+}
+
+function showErrorMessage(message) {
+    if (cartItemsContainer) {
+        cartItemsContainer.innerHTML = `
+            <div class="shopping-cart-empty">
+                <h2>Oops!</h2>
+                <p>${message}</p>
+                <button onclick="location.reload()" class="btn btn-primary">Try Again</button>
+            </div>
+        `;
+    }
 }
 
 async function renderCartItems(cartItems) {
@@ -219,20 +271,26 @@ async function fetchCartItems() {
 }
 
 function addCartEventListeners(container) {
-    const increaseButtons = container.querySelectorAll('.increase-quantity');
-    const decreaseButtons = container.querySelectorAll('.decrease-quantity');
-    const removeButtons = container.querySelectorAll('.remove-from-cart');
+    container.addEventListener('click', async (e) => {
+        const button = e.target.closest('button');
+        if (!button) return;
 
-    increaseButtons.forEach(button => {
-        button.addEventListener('click', () => updateCartQuantity(button.dataset.dishId, true));
-    });
+        const dishId = button.dataset.dishId;
+        if (!dishId) return;
 
-    decreaseButtons.forEach(button => {
-        button.addEventListener('click', () => updateCartQuantity(button.dataset.dishId, false));
-    });
-
-    removeButtons.forEach(button => {
-        button.addEventListener('click', () => removeFromCart(button.dataset.dishId));
+        try {
+            if (button.classList.contains('decrease')) {
+                await removeFromCart(dishId);
+            } else if (button.classList.contains('increase')) {
+                await addToCart(dishId);
+            } else if (button.classList.contains('remove-item')) {
+                await removeItemCompletely(dishId);
+            }
+            await loadCart(); // Refresh cart after any action
+        } catch (error) {
+            console.error('Error updating cart:', error);
+            alert('Failed to update cart. Please try again.');
+        }
     });
 }
 
@@ -301,8 +359,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         checkoutButton.addEventListener('click', () => {
             window.location.href = 'purchase.html';
         });
-    } else {
-        console.error('Checkout button not found');
     }
 });
 

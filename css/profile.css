@@ -1,6 +1,6 @@
 .profile-container {
     max-width: 600px;
-    margin: 2rem auto;
+    margin: 6rem auto 2rem;
     padding: 2rem;
     background: var(--background-secondary);
     border-radius: var(--border-radius-lg);
@@ -76,9 +76,20 @@
     border: 1px solid var(--error);
 }
 
+.input-help {
+    display: block;
+    font-size: 0.8em;
+    color: var(--text-secondary);
+    margin-top: 4px;
+}
+
+input:invalid {
+    border-color: var(--error-color);
+}
+
 @media (max-width: 768px) {
     .profile-container {
-        margin: 1rem;
+        margin: 5rem 1rem 1rem;
         padding: 1rem;
     }
 }

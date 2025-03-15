@@ -21,14 +21,57 @@
 }
 
 .status-in-process {
-    color: orange;
+    color: white;
 }
 
 .status-delivered {
-    color: green;
+    color: white;
 }
 
 .error-message {
     color: red;
     margin-top: 20px;
+}
+
+.order-completed-message {
+    background-color: var(--background-secondary);
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-lg);
+    margin: var(--spacing-md) 0;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+.completed-icon {
+    background-color: var(--success-color);
+    color: white;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+}
+
+.completed-text {
+    flex: 1;
+}
+
+.completed-text h3 {
+    color: var(--success-color);
+    margin: 0 0 var(--spacing-xs);
+}
+
+.completed-text p {
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.completed-price {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
+    color: var(--text-primary);
+    margin-top: var(--spacing-sm);
 }

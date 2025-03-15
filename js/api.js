@@ -2,7 +2,7 @@ export const API_BASE_URL = 'https://food-delivery.int.kreosoft.space';
 
 export async function apiRequest(endpoint, method = 'GET', body = null) {
     const headers = {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
     };
 
     const token = localStorage.getItem('token');
@@ -10,30 +10,37 @@ export async function apiRequest(endpoint, method = 'GET', body = null) {
         headers['Authorization'] = `Bearer ${token}`;
     }
 
-    const options = {
-        method,
-        headers,
-        body: body ? JSON.stringify(body) : null
-    };
+    try {
+        const response = await fetch(API_BASE_URL + endpoint, {
+            method,
+            headers,
+            body: body ? JSON.stringify(body) : null
+        });
 
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+        if (response.status === 401) {
+            throw new Error('401');
+        }
+        if (response.status === 403) {
+            throw new Error('403');
+        }
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
-    if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-    }
+        if (response.status === 204 || method === 'DELETE') {
+            return true;
+        }
 
-    if (response.status === 204 || method === 'DELETE') {
-        return true;
-    }
-
-    if (method === 'GET' || method === 'POST') {
         const contentType = response.headers.get('content-type');
         if (contentType && contentType.includes('application/json')) {
             return await response.json();
         }
-    }
+        return true;
 
-    return true;
+    } catch (error) {
+        console.error('API Request Error:', error);
+        throw error;
+    }
 }
 
 export async function login(email, password) {
@@ -88,25 +95,10 @@ export async function setRating(dishId, rating) {
 export async function getCart() {
     try {
         const response = await apiRequest('/api/basket', 'GET');
-        console.log('Cart data:', response);
-        
-        if (Array.isArray(response)) {
-            return {
-                dishes: response.map(item => ({
-                    id: item.id,
-                    name: item.name,
-                    price: item.price,
-                    amount: item.amount,
-                    image: item.image,
-                    totalPrice: item.totalPrice
-                }))
-            };
-        }
-        
-        return { dishes: [] };
+        return response;
     } catch (error) {
         console.error('Error getting cart:', error);
-        return { dishes: [] };
+        return [];
     }
 }
 
@@ -115,19 +107,23 @@ export async function updateCartCounter() {
         const cartData = await getCart();
         const cartCounter = document.getElementById('cart-counter');
         
-        if (cartCounter && cartData.dishes) {
-            const totalQuantity = cartData.dishes.reduce((total, item) => total + item.amount, 0);
-            
-            if (totalQuantity > 0) {
+        if (cartCounter) {
+            if (Array.isArray(cartData) && cartData.length > 0) {
+                const totalQuantity = cartData.reduce((total, item) => total + item.amount, 0);
                 cartCounter.textContent = totalQuantity;
                 cartCounter.style.display = 'inline-block';
             } else {
-                cartCounter.textContent = '';
-                cartCounter.style.display = 'none';
+                cartCounter.textContent = '0';
+                cartCounter.style.display = 'inline-block';
             }
         }
     } catch (error) {
         console.error('Error updating cart counter:', error);
+        const cartCounter = document.getElementById('cart-counter');
+        if (cartCounter) {
+            cartCounter.textContent = '0';
+            cartCounter.style.display = 'inline-block';
+        }
     }
 }
 
@@ -156,6 +152,7 @@ export async function removeFromCart(dishId, decrease = true) {
 export async function removeItemCompletely(dishId) {
     try {
         await apiRequest(`/api/basket/dish/${dishId}?increase=false`, 'DELETE');
+        await updateCartCounter();
         const updatedCart = await getCart(); 
         return updatedCart;
     } catch (error) {

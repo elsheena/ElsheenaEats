@@ -2,35 +2,45 @@ import { apiRequest } from './api.js';
 
 async function loadOrders() {
     try {
-        const orders = await apiRequest('/api/order', 'GET');
-        console.log('Orders:', orders);
+        const ordersList = await apiRequest('/api/order', 'GET');
+        console.log('Initial orders list:', ordersList);
 
-        if (!orders || orders.length === 0) {
+        if (!ordersList || ordersList.length === 0) {
             displayEmptyOrders();
             return;
         }
 
         const ordersWithDetails = await Promise.all(
-            orders.map(async (order) => {
-                const orderDetails = await apiRequest(`/api/order/${order.id}`, 'GET');
-                
+            ordersList.map(async (order) => {
                 try {
-                    const basketResponse = await apiRequest('/api/basket', 'GET');
-                    console.log('Basket response for order:', order.id, basketResponse);
-                    
-                    if (basketResponse && Array.isArray(basketResponse)) {
-                        orderDetails.dishes = basketResponse;
-                    }
-                } catch (basketError) {
-                    console.error('Error fetching basket for order:', order.id, basketError);
+                    const details = await apiRequest(`/api/order/${order.id}`, 'GET');
+                    console.log(`Details for order ${order.id}:`, details);
+                    return details;
+                } catch (error) {
+                    console.error(`Error fetching details for order ${order.id}:`, error);
+                    return null;
                 }
-
-                return orderDetails;
             })
         );
 
-        console.log('Orders with details:', ordersWithDetails);
-        await renderOrders(ordersWithDetails);
+        const validOrders = ordersWithDetails
+            .filter(order => order !== null)
+            .sort((a, b) => {
+                const dateA = new Date(a.orderTime).getTime();
+                const dateB = new Date(b.orderTime).getTime();
+                if (dateB > dateA) return 1;
+                if (dateB < dateA) return -1;
+                return 0;
+            });
+
+        console.log('Final orders with details (sorted):', validOrders);
+
+        if (validOrders.length === 0) {
+            displayEmptyOrders();
+            return;
+        }
+
+        await renderOrders(validOrders);
     } catch (error) {
         console.error('Error loading orders:', error);
         displayEmptyOrders();
@@ -60,20 +70,22 @@ async function renderOrders(orders) {
         const formattedOrderTime = new Date(order.orderTime).toLocaleString();
 
         const dishImages = order.dishes && order.dishes.length > 0 
-            ? order.dishes.slice(0, 4).map((dish, index) => `
+            ? order.dishes.slice(0, 4).map(dish => `
                 <div class="order-collage-item">
-                    <img src="${dish.image}" 
+                    <img src="${dish.image || '../images/placeholder-food.jpg'}" 
                          alt="${dish.name}"
-                         data-order-id="${order.id}"
-                         data-dish-index="${index}"
-                         data-all-dishes='${JSON.stringify(order.dishes.map(d => ({ 
-                             image: d.image, 
-                             name: d.name 
-                         })))}'
+                         onerror="this.src='../images/placeholder-food.jpg'"
                          loading="lazy">
                 </div>
             `).join('')
-            : `<div class="order-collage-empty">Order #${order.id.slice(0, 8)} - ${order.price} ₽</div>`;
+            : `<div class="order-collage-empty">
+                <div class="order-summary">
+                    ${order.status === 'Delivered' 
+                        ? '<div class="order-completed">✓ Order Completed</div>'
+                        : `<div class="order-status-text">${formatStatus(order.status)}</div>`
+                    }
+                </div>
+               </div>`;
 
         orderElement.innerHTML = `
             <a href="order.html?id=${order.id}" class="order-link">
@@ -101,34 +113,6 @@ async function renderOrders(orders) {
         `;
         
         ordersContainer.appendChild(orderElement);
-
-        const images = orderElement.getElementsByTagName('img');
-        Array.from(images).forEach(img => {
-            img.addEventListener('error', function() {
-                const allDishes = JSON.parse(this.dataset.allDishes);
-                const currentIndex = parseInt(this.dataset.dishIndex);
-                
-                const usedImages = new Set(Array.from(images)
-                    .map(img => img.src)
-                    .filter(src => !src.includes('placeholder-food.jpg')));
-                
-                const remainingDish = allDishes.slice(currentIndex + 1)
-                    .find(dish => !usedImages.has(dish.image));
-
-                if (remainingDish) {
-                    this.src = remainingDish.image;
-                    this.alt = remainingDish.name;
-                } else {
-                    const dishName = this.alt;
-                    const container = this.parentElement;
-                    container.innerHTML = `
-                        <div class="order-collage-text">
-                            ${dishName}
-                        </div>
-                    `;
-                }
-            });
-        });
     }
 }
 

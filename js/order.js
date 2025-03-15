@@ -16,23 +16,9 @@ async function loadOrderDetails() {
         }
 
         console.log('Loading order:', orderId);
-        console.log('Using token:', token);
-
         const orderDetails = await apiRequest(`/api/order/${orderId}`, 'GET');
-        console.log('Raw API response:', orderDetails);
-
-        try {
-            const basketResponse = await apiRequest('/api/basket', 'GET');
-            console.log('Basket response:', basketResponse);
-            
-            if (basketResponse && Array.isArray(basketResponse)) {
-                orderDetails.dishes = basketResponse;
-            }
-        } catch (basketError) {
-            console.error('Error fetching basket:', basketError);
-        }
-
-        console.log('Final order details:', orderDetails);
+        console.log('Order details:', orderDetails);
+        
         renderOrderDetails(orderDetails);
     } catch (error) {
         console.error('Error in loadOrderDetails:', error);
@@ -49,9 +35,6 @@ function renderOrderDetails(order) {
     const statusClass = getStatusClass(order.status);
     const formattedDeliveryTime = new Date(order.deliveryTime).toLocaleString();
     const formattedOrderTime = new Date(order.orderTime).toLocaleString();
-
-    console.log('Full order object:', order);
-    console.log('Dishes array:', order.dishes);
 
     container.innerHTML = `
         <div class="order-card">
@@ -71,30 +54,35 @@ function renderOrderDetails(order) {
                 <span>${order.address}</span>
             </div>
 
-            <div class="order-items">
-                ${Array.isArray(order.dishes) && order.dishes.length > 0 ? 
-                    order.dishes.map(dish => `
-                        <div class="order-item" onclick="window.location.href='item.html?id=${dish.id}'">
-                            <div class="order-item-image">
-                                <img src="${dish.image || '../images/placeholder-food.jpg'}" 
-                                     alt="${dish.name}"
-                                     onerror="this.src='../images/placeholder-food.jpg'"
-                                     loading="lazy">
+            ${order.status === 'Delivered' ? `
+                <div class="order-completed-message">
+                    <div class="completed-icon">✓</div>
+                    <div class="completed-text">
+                        <h3>Order Completed</h3>
+                        <p>This order has been delivered</p>
+                    </div>
+                </div>
+            ` : `
+                <div class="order-items">
+                    ${order.dishes && order.dishes.length > 0 ? 
+                        order.dishes.map(dish => `
+                            <div class="order-item" onclick="window.location.href='item.html?id=${dish.id}'" style="cursor: pointer;">
+                                <div class="order-item-image">
+                                    <img src="${dish.image || '../images/placeholder-food.jpg'}" 
+                                         alt="${dish.name}"
+                                         onerror="this.src='../images/placeholder-food.jpg'">
+                                </div>
+                                <div class="order-item-details">
+                                    <h4>${dish.name}</h4>
+                                    <span class="order-item-price">${dish.price} ₽ × ${dish.amount}</span>
+                                </div>
+                                <span class="order-item-total">${dish.totalPrice} ₽</span>
                             </div>
-                            <div class="order-item-details">
-                                <h4>${dish.name || 'Unknown Item'}</h4>
-                                <span class="order-item-price">${dish.price || 0} ₽ × ${dish.amount || 1}</span>
-                            </div>
-                            <span class="order-item-total">${dish.totalPrice || (dish.price * dish.amount) || 0} ₽</span>
-                        </div>
-                    `).join('') 
-                    : `
-                        <div class="orders-empty">
-                            <p>This order contains ${order.price ? `items worth ${order.price} ₽` : 'no items'}</p>
-                        </div>
-                    `
-                }
-            </div>
+                        `).join('') 
+                        : '<div class="orders-empty">No items in this order</div>'
+                    }
+                </div>
+            `}
 
             <div class="order-total">
                 Total: ${order.price} ₽
@@ -144,7 +132,7 @@ function formatStatus(status) {
 async function confirmDelivery(orderId) {
     try {
         await apiRequest(`/api/order/${orderId}/status`, 'POST');
-        await loadOrderDetails(); // Refresh the order details
+        await loadOrderDetails(); 
     } catch (error) {
         console.error('Error confirming delivery:', error);
         alert('Failed to confirm delivery. Please try again.');
