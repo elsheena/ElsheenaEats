@@ -1,4 +1,4 @@
-import { login } from './api.js';
+8import { login } from './api.js';
 import { getCleanUrl } from './main.js';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -16,7 +16,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.location.href = getCleanUrl('index');
             } catch (error) {
                 console.error('Login error:', error);
-                alert('Login failed: ' + error.message);
+                if (error.message == "HTTP error! status: 400"){
+                    alert('Login failed: Username or Password is not correct');
+                } else {
+                    alert('Login failed: ' + error.message);
+                }
             }
         });
     }
